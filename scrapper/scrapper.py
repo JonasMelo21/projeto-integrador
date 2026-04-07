@@ -120,7 +120,7 @@ def scrape_properties(url: str, timeout_ms: int = 45_000, num_pages: int = 1) ->
 		print(f"\n📄 Extraindo página {page_num}/{num_pages}: {page_url}")
 		
 		with sync_playwright() as playwright:
-			browser = playwright.chromium.launch(headless=False)
+			browser = playwright.chromium.launch(headless=True)
 			context = browser.new_context()
 			page = context.new_page()
 
