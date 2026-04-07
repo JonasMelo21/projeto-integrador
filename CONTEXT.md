@@ -142,28 +142,30 @@ except PlaywrightTimeoutError as e:
   - `refactor:` Refatoração sem mudança de comportamento
   - `chore:` Dependências, configs, setup
 
-- **Regra importante:** Commits devem ser **sucintos, descritivos e em português**
-  - Máximo ~72 caracteres na primeira linha
+- **Mensagens de Commit (Máximo 2 linhas):**
+  - Linha 1: Tipo + descrição (~72 caracteres)
+  - Linha 2 (opcional): Contexto ou detalhes adicionais
   - Descrever *o quê* foi feito, não *como*
 
 ```bash
 # ✅ CORRETO (Breve, português, semântico)
 git commit -m "feat: adiciona geração de ID com SHA256"
-git commit -m "fix: corrige lógica de deduplicação na paginação"
-git commit -m "docs: atualiza guia de arquitectura"
-git commit -m "refactor: simplifica estrutura de rotas"
+git commit -m "fix: corrige lógica de dedup
+Ajusta set de IDs duplicados após paginação"
 
 # ❌ ERRADO
 git commit -m "feature: added property ID generation with SHA256"
 git commit -m "atualiza tudo"
 git commit -m "WIP"
-git commit -m "arruma erro lá no lugar"
 ```
 
-- **Pull Requests:**
-  - Título: Breve em português (similar ao commit)
-  - Descrição: Pode ser mais longa, em português, incluindo contexto, testes e validações
-  - Usar templates de PR quando disponível
+- **Pull Requests (Máximo 4 parágrafos):**
+  - Parágrafo 1: O que foi feito e por quê
+  - Parágrafo 2: Mudanças principais e impacto
+  - Parágrafo 3: Testes e validações realizadas
+  - Parágrafo 4 (opcional): Próximos passos ou contexto
+  - Use templates de PR quando disponível
+  - Incluir checklist, links e evidências quando necessário
 
 ### 7. Nomes de Variáveis e Funções
 ```python
