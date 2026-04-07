@@ -1,107 +1,527 @@
-# Contexto do Projeto: RentMaster (Moneyball de Aluguel)
+# CONTEXT.md - Guia de Codificação: RentMaster
 
-Atue como um Engenheiro de Software Sênior (Especialista em Engenharia de Dados, MLOps e Full-Stack). Você está me auxiliando no desenvolvimento do "RentMaster", uma plataforma inteligente de consolidação e análise de imóveis para aluguel.
+> **Este arquivo é um guia essencial para agentes de IA e desenvolvedores.** Define as regras de codificação, padrões, stack tecnológico e estado do projeto.
 
-## 🎯 Objetivo do Produto
-Uma aplicação web orientada a valor (Agile) que extrai dados reais de mercado via web scraping, aplica modelos de Machine Learning para avaliar se o preço do aluguel está "Caro, Justo ou Barato" (conceito Moneyball), e disponibiliza um assistente virtual (Chatbot Text-to-SQL) para o usuário tirar dúvidas complexas usando linguagem natural.
+---
 
-## 🛠️ Stack Tecnológica e Arquitetura (Ecossistema Azure)
-O projeto deve ser construído pensando em conteinerização (Docker) e nuvem. Utilize as seguintes tecnologias ao gerar códigos:
+## 📌 Sobre o RentMaster
 
-* **Coleta de Dados (Web Scraping):** Python (BeautifulSoup/Selenium/Playwright), conteinerizado via Docker (para rodar no Azure Container Instances via Azure Data Factory).
-* **Armazenamento e Engenharia de Dados:** Arquitetura Medalhão (Bronze, Silver, Gold) utilizando Azure Databricks (PySpark) e Data Lake (ADLS Gen2).
-* **Fluxo de Persistência de Dados:** Os dados coletados devem ser carregados primeiro no ADLS Gen2, seguindo a Arquitetura Medalhão (Bronze, Silver e Gold), e somente depois disponibilizados no Azure Database for PostgreSQL para consumo transacional e pela API.
-* **Backend & API:** Python com FastAPI (hospedado no Azure App Service).
-* **Inteligência Artificial (Chatbot):** Vanna.ai / LangChain conectados ao PostgreSQL para Text-to-SQL, servidos via FastAPI.
-* **Machine Learning (Preços):** Scikit-Learn/XGBoost com rastreamento via MLflow e deploy no Azure Machine Learning (Managed Online Endpoints).
-* **Frontend:** React, JavaScript e Tailwind CSS (hospedado no Azure Static Web Apps).
-* **DevOps & CI/CD:** Versionamento de código no Azure Repos, gestão ágil no Azure Boards, repositório de imagens Docker no Azure Container Registry (ACR) e automação de CI/CD com Azure Pipelines.
+**RentMaster** (Moneyball de Aluguel) é uma plataforma inteligente que:
+- Extrai dados reais de imóveis via web scraping (Sprint 2)
+- Aplica ML para avaliar se o preço está "Caro, Justo ou Barato" (Sprint 3)
+- Fornece um assistente virtual (Chatbot Text-to-SQL) para análises complexas (Sprint 3)
 
-## 📦 Gerenciamento de Pacotes com uv
-O projeto deve utilizar `uv` como ferramenta padrão para gerenciamento de dependências e ambiente Python.
+**Status:** Sprint 1 Concluído (Fundações) ✅ | Sprint 2 Iniciado (Scraper/Backend) 🔄
 
-Boas práticas de uso:
+---
 
-1. Inicializar e manter as dependências no `pyproject.toml` (evitar dependências soltas fora do projeto).
-2. Separar dependências por grupos para manter clareza e reduzir acoplamento entre contextos.
-3. Usar grupos para instalação seletiva por etapa (desenvolvimento local, CI, scraping, treino, API).
-4. Fixar versões de bibliotecas críticas para garantir reprodutibilidade.
+## 🛠️ Stack Tecnológico
 
-Estratégia recomendada de grupos:
+### Coleta de Dados (Web Scraping)
+- **Python:** BeautifulSoup, Playwright, Selenium
+- **Containerização:** Docker (Azure Container Instances via Azure Data Factory)
+- **Ferramentas:** `uv` para gerenciamento de dependências
 
-1. `default`/core: dependências essenciais compartilhadas.
-2. `api`: FastAPI, Uvicorn e libs relacionadas ao backend.
-3. `scraping`: Playwright, BeautifulSoup e utilitários de extração.
-4. `data`: libs de engenharia de dados (ex.: PySpark, conectores, utilitários de transformação).
-5. `ml`: bibliotecas de modelagem e rastreamento (scikit-learn, xgboost, mlflow).
-6. `test`: pytest e ferramentas de teste.
-7. `dev`: lint, formatação e produtividade.
+### Armazenamento e Engenharia de Dados
+- **Data Lake:** Azure Data Lake Storage Gen2 (ADLS Gen2)
+- **Arquitetura:** Medalhão (Bronze → Silver → Gold)
+- **Processing:** Azure Databricks (PySpark)
 
-Comandos de referência:
+### Backend & API
+- **Framework:** FastAPI (hospedado em Azure App Service)
+- **Linguagem:** Python
+- **Padrão:** Separação clara (routers, services, models, schemas)
 
-1. `uv sync`
-2. `uv add <package>`
-3. `uv add --group <group> <package>`
-4. `uv remove <package>`
-5. `uv remove --group <group> <package>`
-6. `uv run <command>`
+### Banco de Dados
+- **Principal:** Azure Database for PostgreSQL
+- **Função:** Consumo transacional, API queries, Chatbot
 
-## 📚 Documentação do Projeto
-A pasta `docs/` concentra documentos relacionados ao projeto, incluindo materiais de visão, planejamento, arquitetura e apoio às entregas da disciplina. Os principais arquivos atualmente presentes são:
+### Machine Learning
+- **Modelagem:** Scikit-Learn, XGBoost
+- **Rastreamento:** MLflow
+- **Deploy:** Azure Machine Learning (Managed Online Endpoints)
 
-1. `Artefatos do Projeto - Overview.pdf`
-2. `Documento de Visão - Overview.pdf`
-3. `Estrutura Analítica do Projeto - EAP - Overview.pdf`
-4. `História do Usuário - Overview.pdf`
-5. `Diagrama ER - Overview.pdf`
-6. `backlog_sprint.csv`
-7. `er_diagram.mmd`
-8. `CCO_PI3_Aula_01_Apresentação_Disciplina_e_PlanoEnsino_2026_1.pptx`
-9. `CCO_PI3_PlanoDeAula_2026_1.pdf`
-10. `CCO_PI3_PlanoDeEnsino_2026_1.pdf`
+### IA & Chatbot
+- **Framework:** Vanna.ai / LangChain
+- **Padrão:** Text-to-SQL connected to PostgreSQL
+- **Delivery:** FastAPI
 
-## 🚀 Foco Atual (Sprint 1)
-Neste momento, estamos trabalhando na **Sprint 1**, focada em entregar a primeira "fatia vertical" de valor: a Vitrine de Imóveis Reais.
-As tarefas atuais envolvem:
-1.  Desenvolver o scraper inicial de dados para portais (ex: DF Imóveis).
-2.  Definir o pipeline inicial de carga no ADLS Gen2 (camadas Bronze/Silver/Gold).
-3.  Modelar as tabelas iniciais no PostgreSQL com dados curados da camada Gold.
-4.  Criar a rota de listagem no FastAPI.
-5.  Subir o esqueleto do Frontend em React + Tailwind e conectá-lo à API.
+### Frontend
+- **Framework:** React + JavaScript
+- **Styling:** Tailwind CSS
+- **Hospedagem:** Azure Static Web Apps
 
-## 🗂️ Arquitetura de Pastas Atual
-```text
-Projeto Integrador III 2.0/
-├── CONTEXT.md
-├── README.md
-├── .code-workspace.code-workspace
-└── docs/
-	├── Artefatos do Projeto - Overview.pdf
-	├── CCO_PI3_Aula_01_Apresentação_Disciplina_e_PlanoEnsino_2026_1.pptx
-	├── CCO_PI3_Aula_01_Apresentação_Disciplina_e_PlanoEnsino_2026_1.pptx:Zone.Identifier
-	├── CCO_PI3_PlanoDeAula_2026_1.pdf
-	├── CCO_PI3_PlanoDeAula_2026_1.pdf:Zone.Identifier
-	├── CCO_PI3_PlanoDeEnsino_2026_1.pdf
-	├── CCO_PI3_PlanoDeEnsino_2026_1.pdf:Zone.Identifier
-	├── Diagrama ER - Overview.pdf
-	├── Documento de Visão - Overview.pdf
-	├── Estrutura Analítica do Projeto - EAP - Overview.pdf
-	├── História do Usuário - Overview.pdf
-	├── backlog_sprint.csv
-	└── er_diagram.mmd
+### DevOps & CI/CD
+- **Versionamento:** Azure Repos
+- **Gestão Ágil:** Azure Boards
+- **Imagens Docker:** Azure Container Registry (ACR)
+- **Automação:** Azure Pipelines
+
+---
+
+## 📋 Regras de Codificação (CRÍTICO - SEMPRE SEGUIR)
+
+### 1. Idioma
+- **Código:** Inglês (variáveis, funções, classes, modules)
+- **Documentação:** Português do Brasil (docstrings, comments, README, guides)
+
+**Exemplos:**
+```python
+# ❌ ERRADO
+def extrair_dados_imovel():
+    """Extrai os dados"""
+    dados_locais = []
+
+# ✅ CORRETO
+def extract_property_data(article_html: str) -> dict:
+    """Extrai dados de um imóvel a partir do HTML da article."""
+    properties = []
 ```
 
-## 📜 Regras de Código e Boas Práticas
-Sempre que for gerar ou refatorar um código, obedeça rigorosamente às seguintes regras:
+### 2. Clean Code & SOLID
+- **S**ingle Responsibility: Uma função faz UMA coisa
+- **O**pen/Closed: Aberto pra extensão, fechado pra modificação
+- **L**iskov Substitution: Subclasses substituem superclasses sem quebrar
+- **I**nterface Segregation: Interfaces específicas, não genéricas
+- **D**ependency Inversion: Depende de abstrações, não implementações
 
-Idioma: Escreva o código em si (variáveis, funções, classes) em Inglês. Escreva a documentação (docstrings, README, comentários complexos) em Português do Brasil.
+**Na prática:**
+- Funções <= 20 linhas (preferencialmente)
+- Nomes descritivos (não `x`, `temp`, `data`)
+- Sem código duplicado (DRY)
 
-Clean Code: Siga os princípios SOLID. Separe as responsabilidades (ex: no FastAPI, separe routers, services, models e schemas).
+### 3. Estrutura de Pastas (FastAPI Backend)
+```
+backend/
+├── app/
+│   ├── __init__.py
+│   ├── main.py              # Entry point
+│   ├── routers/             # Rotas por domínio (properties.py, users.py)
+│   ├── services/            # Lógica de negócio
+│   ├── models/              # Modelos de dados (Pydantic)
+│   ├── schemas/             # DTOs (request/response)
+│   ├── database/            # Conexão, migrations
+│   └── config.py            # Variáveis de ambiente
+├── tests/
+└── requirements.txt / pyproject.toml
+```
 
-Git: Quando eu pedir ajuda com versionamento, assuma o uso de Feature Branches (feature/nome-da-tarefa) e Semantic Commits (feat:, fix:, chore:, docs:).
+### 4. Type Hints (Obrigatório)
+```python
+# ❌ ERRADO
+def scrape_properties(url):
+    return []
 
-Modularidade: Mantenha os arquivos pequenos e objetivos. Se um script de ML (como a limpeza de dados) estiver ficando muito complexo, divida-o em funções reutilizáveis.
+# ✅ CORRETO
+def scrape_properties(url: str, timeout_ms: int = 45_000) -> list[dict]:
+    """Faz scraping de imóveis."""
+    properties: list[dict] = []
+    return properties
+```
 
-Tratamento de Erros: O scraper deve ser resiliente a mudanças de layout e falhas de rede (use try/except e retries adequados). A API deve retornar HTTP status codes corretos.
+### 5. Tratamento de Erros
+- **Scraper:** Resiliente a mudanças de layout, retries, logging
+- **API:** HTTP status codes corretos (400, 404, 500, etc.)
+- **Db:** Transações com rollback automático
 
-A partir de agora, usarei este contexto para todas as nossas interações. Se eu pedir para criar o modelo de banco de dados, faça-o em PostgreSQL. Se eu pedir o backend, faça em FastAPI, e assim por diante. Responda "Contexto assimilado. Por onde começamos na Sprint 1?" para confirmar.
+```python
+# Exemplo: Scraper resiliente
+try:
+    page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+except PlaywrightTimeoutError as e:
+    print(f"✗ Timeout: {e}")
+    raise
+```
+
+### 6. Versionamento com Git
+- **Branches:** `feature/nome-da-tarefa`, `fix/nome-do-bug`, `chore/nome-da-task`
+- **Commits Semânticos (em PORTUGUÊS):**
+  - `feat:` Nova funcionalidade
+  - `fix:` Correção de bug
+  - `docs:` Apenas documentação
+  - `refactor:` Refatoração sem mudança de comportamento
+  - `chore:` Dependências, configs, setup
+
+- **Regra importante:** Commits devem ser **sucintos, descritivos e em português**
+  - Máximo ~72 caracteres na primeira linha
+  - Descrever *o quê* foi feito, não *como*
+
+```bash
+# ✅ CORRETO (Breve, português, semântico)
+git commit -m "feat: adiciona geração de ID com SHA256"
+git commit -m "fix: corrige lógica de deduplicação na paginação"
+git commit -m "docs: atualiza guia de arquitectura"
+git commit -m "refactor: simplifica estrutura de rotas"
+
+# ❌ ERRADO
+git commit -m "feature: added property ID generation with SHA256"
+git commit -m "atualiza tudo"
+git commit -m "WIP"
+git commit -m "arruma erro lá no lugar"
+```
+
+- **Pull Requests:**
+  - Título: Breve em português (similar ao commit)
+  - Descrição: Pode ser mais longa, em português, incluindo contexto, testes e validações
+  - Usar templates de PR quando disponível
+
+### 7. Nomes de Variáveis e Funções
+```python
+# ❌ ERRADO
+p = get_data()
+props = [x for x in p if x['price'] > 1000]
+
+# ✅ CORRETO
+properties = get_properties_from_api()
+expensive_properties = [prop for prop in properties if prop['price'] > 1000]
+```
+
+### 8. Docstrings (Google Style)
+```python
+def generate_property_id(url: str) -> str:
+    """Gera ID hexadecimal único a partir da URL do imóvel.
+    
+    Usa SHA-256 da URL e retorna os primeiros 12 caracteres hex.
+    Garante identificação consistente e única para cada imóvel.
+    
+    Args:
+        url: String com a URL do imóvel (ex: https://dfimoveis.com.br/imovel/...)
+    
+    Returns:
+        String com 12 caracteres hexadecimais (ex: "7c2bf7dac4f5")
+    
+    Raises:
+        ValueError: Se url for vazia ou None
+    
+    Example:
+        >>> generate_property_id("https://example.com/imovel/1")
+        '7c2bf7dac4f5'
+    """
+```
+
+### 9. Testes
+- **Framework:** pytest
+- **Cobertura:** >= 80%
+- **Estrutura:** `test_module_name.py` next to source
+
+```bash
+uv run pytest tests/ -v --cov=app
+```
+
+### 10. Ambiente com `uv`
+**Grupos de Dependências (no `pyproject.toml`):**
+```toml
+[dependency-groups]
+scraping = ["beautifulsoup4", "playwright"]
+api = ["fastapi", "uvicorn"]
+data = ["pyspark", "pandas"]
+ml = ["scikit-learn", "xgboost", "mlflow"]
+notebook = ["jupyter", "jupyterlab", "pandas", "matplotlib"]
+test = ["pytest", "pytest-cov"]
+dev = ["ruff", "black", "mypy"]
+```
+
+**Comandos:**
+```bash
+uv sync                              # Sync all dependencies
+uv sync --group scraping             # Sync scraping group only
+uv add --group data pandas           # Add to specific group
+uv run python script.py              # Run script with uv Python
+uv run pytest                        # Run tests
+```
+
+---
+
+## ✅ Status Sprint 1: Fundações e Concepção do Produto (CONCLUÍDO)
+
+### 📊 Epic 1: Fundações e Concepção do Produto
+
+**Tarefas Completas:**
+- ✅ **Modelo de Dados (ER Diagram)** - `docs/er_diagram.mmd`
+  - Entidades: Property, User, Favorites, ML_Predictions
+  - Relacionamentos: User-Favorites, Property-Predictions
+  - Normalização: 3NF
+
+- ✅ **Estrutura Analítica (EAP)** - `docs/eap_diagram.mmd`
+  - 5 Epics mapeados (Fundações, Descoberta, Diagnóstico, Assistente, Jornada)
+  - Features e Tasks por Sprint
+  - Rastreabilidade completa
+
+- ✅ **Protótipos de Telas em Figma**
+  - Wireframes: Listagem, Detalhe, Favoritos, Chat
+  - Componentes visuais: Cards, Filtros, Chat UI
+  - Design System: Cores, Tipografia, Espaçamento
+
+- ✅ **Histórias de Usuário & Critérios de Aceitação**
+  - 5 User Stories (uma por Epic)
+  - Critérios de Aceitação para cada Feature
+  - Rastreadas no Azure Boards
+
+- ✅ **Taskboard & Planejamento Sprint 1**
+  - Backlog estruturado com 6 tarefas
+  - Representantes de cada funcionalidade
+  - Timeline e estimativas
+
+**Entregáveis Gerados:**
+- Documentação de arquitetura (CONTEXT.md, README.md)
+- Guia técnico (docs/SCRAPER_GUIDE.md)
+- Diagramas Mermaid (ER, EAP)
+- Backlog em CSV (docs/backlog_sprint.csv)
+
+### Estrutura de Dados Coletada
+Campos por imóvel:
+```json
+{
+  "id_hex": "7c2bf7dac4f5",           // ID único (SHA-256, 12 chars)
+  "titulo": "SMPW Quadra 4, PARK WAY",
+  "url": "https://dfimoveis.com.br/imovel/...",
+  "preco": "26.900",
+  "descricao": "Texto resumido...",
+  "quartos": "3 Quartos",
+  "suites": "3 Suítes",
+  "vagas": "4 Vagas",
+  "area": "N/A",
+  "imagem": "https://img.dfimoveis.com.br/...",
+  "imobiliaria": "Neves Teixeira Imóveis",
+  "data_extracao": "2026-04-07T06:05:27.120767"
+}
+```
+
+---
+
+## 🚀 Sprint 2: Descoberta e Exploração de Imóveis (PRÓXIMO)
+
+### 🔷 Epic 2: Descoberta e Exploração de Imóveis
+
+**Feature 2.1: Vitrine e Scraping Base**
+- [ ] **Scraper Funcional** (`scrapper/scrapper.py`)
+  - Extração de imóveis por página
+  - Suporte a paginação
+  - Deduplicação automática de IDs
+  - ID Hexadecimal único (SHA-256)
+  - Saída em CSV e JSON
+  - Documentação completa
+
+- [ ] **Jupyter Notebook** (`notebooks/eda.ipynb`)
+  - Carregamento e exploração de dados
+  - Análise exploratória (EDA)
+  - Visualizações iniciais
+
+- [ ] **Pipelines de Ingestão** (Estrutura)
+  - Padrão Medalhão: Bronze → Silver → Gold
+  - Documentação de fluxo
+
+- [ ] **API FastAPI (Rotas Iniciais)**
+  - Estrutura: routers, services, models, schemas
+  - Rota: `GET /api/properties` - Listagem básica
+
+- [ ] **Frontend React (Componentes Base)**
+  - Scaffolding com Create React App + Tailwind
+  - Componentes: Cards de imóveis
+  - Integração com API
+
+**Feature 2.2: Busca e Filtros Dinâmicos**
+- [ ] **Expandir Scraper**
+  - Dados geográficos (bairro, localização)
+  - Links originais para imóveis
+
+- [ ] **Rotas Parametrizadas (Backend)**
+  - `GET /api/properties?preco_min=X&preco_max=Y`
+  - `GET /api/properties?bairro=Y`
+  - `GET /api/properties/{id}` - Detalhe
+
+- [ ] **Queries SQL Otimizadas**
+  - Filtros complexos
+  - Índices em PostgreSQL
+
+- [ ] **Barra de Filtros (Frontend)**
+  - Componente SearchBar
+  - Filtros laterais interativos
+  - Conectar com parâmetros de busca
+
+- [ ] **Performance**
+  - Homologação com base populada
+  - Otimização de queries
+
+---
+
+## 🎨 Sprint 3+: Inteligência e Jornada (FUTURO)
+
+### 💰 Epic 3: Diagnóstico de Preço (O 'Moneyball')
+
+**Feature 3.1: Termômetro de Oportunidade**
+- [ ] **Preparação de Dataset**
+  - Limpeza de dados
+  - Feature engineering (localização, tamanho, amenidades)
+
+- [ ] **Treinamento - XGBoost**
+  - Modelo classificador: Caro / Justo / Barato
+  - Rastreamento com MLflow
+
+- [ ] **Deploy - Azure ML**
+  - Registrar modelo
+  - Managed Online Endpoint
+  - Real-time inference
+
+- [ ] **Frontend - Tags Visuais**
+  - Design das classificações
+  - Integração com API de previsão
+
+### 💬 Epic 4: Assistente Virtual Especialista (Chat)
+
+**Feature 4.1: Motor de IA e Interface**
+- [ ] **Treinamento Vanna.ai**
+  - Schema PostgreSQL
+  - Exemplos de queries
+
+- [ ] **Text-to-SQL Backend**
+  - Rota: `POST /api/chat`
+  - Execução segura de SQL
+  - Logging e auditoria
+
+- [ ] **Chat UI (Frontend)**
+  - Modal flutuante
+  - Histórico de conversas
+  - Sugestões
+
+### ⭐ Epic 5: Jornada Personalizada e Confiabilidade
+
+**Feature 5.1: Gestão de Favoritos**
+- [ ] **Backend - Persistência**
+  - Rotas: `POST /api/favorites`, `DELETE /api/favorites/{id}`
+  - Ligação com usuários
+
+- [ ] **Frontend - Página Meus Favoritos**
+  - Botão Like/Unlike interativo
+  - Página dedicada
+  - Integração com histórico
+
+**Feature 5.2: Disponibilidade Pública (Go Live)**
+- [ ] **Infraestrutura em Nuvem**
+  - ADLS Gen2
+  - PostgreSQL
+  - Azure App Service / Static Web Apps
+
+- [ ] **Deployment Completo**
+  - CI/CD com Azure Pipelines
+  - Deploy Backend + Frontend
+  - CORS e variáveis de produção
+
+- [ ] **Documentação & Reports**
+  - Documentação técnica
+  - Relatórios finais
+  - SLAs e monitoring
+
+---
+
+## 🔄 Fluxo de Dados (Visão Geral)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. WEB SCRAPING (Playwright + BeautifulSoup)               │
+│    └─> DFimoveis.com.br → JSON/CSV files                  │
+└──────────────────────┬──────────────────────────────────────┘
+                       ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 2. EXTRACT → ADLS Gen2 Bronze (/bronze/raw/)               │
+│    └─> Azure Data Factory Trigger                          │
+└──────────────────────┬──────────────────────────────────────┘
+                       ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 3. TRANSFORM → Databricks (PySpark)                        │
+│    Bronze (/bronze/) → Silver (/silver/cleaned/)           │
+│    Clean, validate, deduplicate, enrich                    │
+└──────────────────────┬──────────────────────────────────────┘
+                       ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 4. LOAD → PostgreSQL (from Silver + Gold)                  │
+│    Silver data → PostgreSQL `properties` table             │
+└──────────────────────┬──────────────────────────────────────┘
+                       ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 5. API & ML (FastAPI)                                      │
+│    ├─ GET /properties → From PostgreSQL                    │
+│    ├─ POST /chat → Text-to-SQL (Vanna.ai)                 │
+│    └─ POST /predict_price → ML Endpoint                   │
+└──────────────────────┬──────────────────────────────────────┘
+                       ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 6. FRONTEND (React + Tailwind)                             │
+│    ├─ Azure Static Web Apps                                │
+│    ├─ Calls backend API                                    │
+│    └─ Real-time dashboards                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📦 Estrutura Atual do Projeto
+
+```
+Projeto Integrador III 2.0/
+├── CONTEXT.md                          # ← VOCÊ ESTÁ AQUI (Guia de Codificação)
+├── README.md                           # ← Visão geral do projeto
+├── pyproject.toml                      # Config `uv` com grupos de deps
+├── main.py                             # Entry point (TODO)
+│
+├── scrapper/                           # 🔷 WEB SCRAPING (Sprint 1 ✅)
+│   └── scrapper.py                     # Scraper com paginação & dedup
+│
+├── notebooks/                          # 📊 ANÁLISE DE DADOS (Sprint 1 ✅)
+│   └── eda.ipynb                       # Exploração dos dados coletados
+│
+├── docs/
+│   ├── SCRAPER_GUIDE.md               # 📖 Como usar o scraper
+│   ├── er_diagram.mmd                 # 🏗️ Modelo de Dados (Sprint 1 ✅)
+│   ├── eap_diagram.mmd                # 📊 Estrutura Analítica (Sprint 1 ✅)
+│   ├── backlog_sprint.csv             # Backlog com histórias
+│   └── [PDFs de requisitos]
+│
+├── backend/                            # 🚀 API BACKEND (Sprint 2 🔄)
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── routers/                   # Rotas por domínio
+│   │   ├── services/
+│   │   ├── models/
+│   │   └── schemas/
+│   └── tests/
+│
+├── frontend/                           # 🎨 FRONTEND (Sprint 2 🔄)
+│   ├── src/
+│   │   ├── components/                # React components
+│   │   ├── pages/
+│   │   └── styles/
+│   └── package.json
+│
+└── ml/                                 # 🤖 MACHINE LEARNING (Sprint 3 ⏳)
+    ├── models/
+    ├── preprocessing/
+    └── evaluation/
+```
+
+---
+
+## 🎓 Referências Rápidas para Agentes IA
+
+Quando receber instruções, procure por:
+1. **Regras de código** → Seção "Regras de Codificação" deste arquivo
+2. **Como usar o scraper** → [docs/SCRAPER_GUIDE.md](docs/SCRAPER_GUIDE.md)
+3. **Visão do projeto** → [README.md](README.md)
+4. **Stack Azure** → Seção "Stack Tecnológico" deste arquivo
+5. **Estado de progresso** → Seções "Status Sprint X" deste arquivo
+
+---
+
+## 📞 Suporte & Próximos Passos
+
+Dúvidas? Consulte:
+- Este CONTEXT.md (regras e arquitetura)
+- README.md (overview do projeto)
+- docs/SCRAPER_GUIDE.md (instruções do scraper)
+- Código-fonte comentado (docstrings em português)
+
+---
+
+**Última atualização:** 2026-04-07  
+**Versão:** 1.1.0 (Sprint 1 ✅ + Sprint 2 🔄)  
+**Ciclo de Desenvolvimento:** Epic1 → Epic2 → Epics3-5 → Deploy
