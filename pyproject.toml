@@ -1,0 +1,14 @@
+[project]
+name = "projeto-integrador-iii-2-0"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = []
+scraping = [
+    "beautifulsoup4>=4.14.3",
+    "playwright>=1.58.0",
+]

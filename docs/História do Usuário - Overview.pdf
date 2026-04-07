@@ -1,0 +1,17 @@
+### 2. Histórias de Usuário da Sprint 1 (Para o Professor)
+O professor pediu explicitamente os "critérios de aceitação para cada protótipo". Vamos reescrever as histórias dessa Sprint inicial para bater exatamente com a ementa dele:
+
+* **[US-01] Protótipos de Interface:** "Como usuário, quero ver uma representação visual (protótipo) das telas principais, para entender como será a navegação e o fluxo de busca de imóveis."
+    * **Critérios de Aceitação:**
+        * Protótipo navegável no Figma finalizado.
+        * Deve conter a Tela Inicial (Vitrine), a Tela de Detalhes do Imóvel e a Interface do Chatbot.
+        * Design System (paleta de cores e tipografia) definido e aprovado.
+* **[US-02] Modelagem de Dados:** "Como engenheiro de dados, quero o diagrama do banco de dados (MER/DER) mapeado, para garantir que o sistema suportará os dados do scraper e o histórico do chatbot."
+    * **Critérios de Aceitação:**
+        * Diagrama ER (Mermaid/PDF) refletindo as tabelas de `imoveis`, `usuarios`, `chat_historico` e `analises_ml`.
+        * Relacionamentos e tipos de dados validados.
+* **[US-03] Estruturação Ágil:** "Como PO e Professor, quero o backlog do produto cadastrado e as Sprints planejadas, para acompanhar o progresso e o esforço da equipe ao longo do semestre."
+    * **Critérios de Aceitação:**
+        * EAP hierárquica concluída e aprovada.
+        * Backlog importado no Azure DevOps com Epics, Features, PBIs e Tasks.
+        * Horas/esforço ou atribuições preenchidas no Taskboard.
