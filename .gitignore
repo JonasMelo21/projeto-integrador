@@ -1,2 +1,5 @@
 # arquivos de pycache
 __pycache__/
+
+# arquivos de data
+data/

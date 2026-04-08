@@ -121,18 +121,17 @@ def scrape_properties(url: str, timeout_ms: int = 45_000, num_pages: int = 1) ->
 		
 		with sync_playwright() as playwright:
 			browser = playwright.chromium.launch(headless=True)
-			context = browser.new_context()
+			context = browser.new_context(
+				user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+			)
 			page = context.new_page()
 
 			try:
 				page.goto(page_url, wait_until="domcontentloaded", timeout=timeout_ms)
 				print(f"✓ Página carregada com sucesso")
 				
-				# Aguarda o carregamento dos imóveis
-				page.wait_for_selector("article[itemtype*='RealEstateListing']", timeout=10000)
-				print("✓ Imóveis carregados")
-				
-				time.sleep(3)  # Aguarda JS renderizar
+				# Aguarda rendering do JS e carregamento de dados
+				time.sleep(8)
 				
 				# Obtém o HTML da página
 				page_content = page.content()
@@ -140,7 +139,14 @@ def scrape_properties(url: str, timeout_ms: int = 45_000, num_pages: int = 1) ->
 				
 				# Encontra todos os artigos de imóveis
 				articles = soup.find_all("article", {"itemtype": "https://schema.org/RealEstateListing"})
-				print(f"✓ {len(articles)} imóveis encontrados nesta página")
+				
+				if articles:
+					print(f"✓ {len(articles)} imóveis encontrados nesta página")
+				else:
+					print("⚠ Nenhum imóvel encontrado, verificando structure...")
+					# Fallback: procura por qualquer article
+					articles = soup.find_all("article")
+					print(f"   → Encontrados {len(articles)} articles genéricos")
 				
 				page_total = 0
 				page_duplicates = 0
@@ -182,8 +188,8 @@ def save_to_csv(properties: list[dict], filename: str = "imoveis.csv") -> None:
 		print("Nenhum imóvel para salvar")
 		return
 	
-	output_dir = Path("/home/jonasmelo/ProjectsAndStudies/Projeto Integrador III 2.0/data")
-	output_dir.mkdir(exist_ok=True)
+	output_dir = Path("/app/data") if Path("/app/data").exists() else Path("/home/jonasmelo/ProjectsAndStudies/Projeto Integrador III 2.0/data")
+	output_dir.mkdir(parents=True, exist_ok=True)
 	
 	filepath = output_dir / filename
 	
@@ -201,8 +207,8 @@ def save_to_json(properties: list[dict], filename: str = "imoveis.json") -> None
 		print("Nenhum imóvel para salvar")
 		return
 	
-	output_dir = Path("/home/jonasmelo/ProjectsAndStudies/Projeto Integrador III 2.0/data")
-	output_dir.mkdir(exist_ok=True)
+	output_dir = Path("/app/data") if Path("/app/data").exists() else Path("/home/jonasmelo/ProjectsAndStudies/Projeto Integrador III 2.0/data")
+	output_dir.mkdir(parents=True, exist_ok=True)
 	
 	filepath = output_dir / filename
 	
