@@ -168,3 +168,54 @@ python .time-tracking/sync_to_devops.py --task-id 123 --hours 28.5
 Qualquer dúvida, consulte:
 - `.time-tracking/README.md` - Documentação técnica completa
 - `CONTEXT.md` - Seção "11. Time Tracking Automático"
+
+---
+
+## ⚠️ Status Atual: Bloqueador
+
+### 🔴 WakaTime API - Erro 401 Unauthorized
+
+**Status:** `INVESTIGAÇÃO EM ANDAMENTO` (Azure DevOps Task #1277)
+
+**Problema:**
+- API WakaTime retorna `401 Unauthorized` ao tentar autenticar
+- Erro persiste apesar de:
+  - ✅ API Key válida (confirmada no site WakaTime)
+  - ✅ Email verificado na conta WakaTime
+  - ✅ Sintaxe correta em `.env` e `~/.wakatime.cfg`
+  - ✅ Testado 5 vezes com diferentes certificados/configurações
+
+**Impacto:**
+- ❌ Time tracking automático **BLOQUEADO**
+- ⚠️ Horas de desenvolvimento não estão sendo registradas
+- 📌 Será necessário registrar horas manualmente no Azure DevOps até resolução
+
+**Decisão:**
+Pivotado para completion de Sprint 2 Feature 2.1 (Scraper com Docker + ADLS Gen2).
+WakaTime será investigado e resolvido em próxima sessão.
+
+**Próximos Passos:**
+1. Verificar logs de API do WakaTime com suporte da plataforma
+2. Testar com nova conta WakaTime (descartar erro de permissões)
+3. Considerar alternativa: integração direta com Azure Monitor / Application Insights
+4. Registrar horas manualmente no Azure DevOps enquanto não resolvido
+
+**Task Relacionada:**
+- 🔗 [Azure DevOps Task #1277](https://dev.azure.com/RentMaster/Projeto%20Integrador%20III%202.0/_workitems/edit/1277)
+- 🔗 [PBI Sprint 2 #1227](https://dev.azure.com/RentMaster/Projeto%20Integrador%20III%202.0/_workitems/edit/1227)
+
+**Logs de Teste (2026-04-08):**
+```bash
+# Teste 1: Com API key em .env
+$ python .time-tracking/test_wakatime.py
+❌ HTTP 401: Unauthorized
+
+# Teste 2: Com ~/.wakatime.cfg
+$ curl -u :waka_5a1... https://wakatime.com/api/v1/user/current
+❌ HTTP 401: Unauthorized
+
+# Teste 3-5: Diferentes chaves, certificados, etc
+❌ Mesmo erro persistente
+```
+
+---

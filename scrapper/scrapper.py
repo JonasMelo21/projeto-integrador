@@ -18,6 +18,14 @@ from bs4 import BeautifulSoup
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
+# Azure Storage imports (para upload a ADLS Gen2)
+try:
+	from azure.storage.blob import BlobServiceClient
+	from azure.identity import DefaultAzureCredential
+	AZURE_AVAILABLE = True
+except ImportError:
+	AZURE_AVAILABLE = False
+
 
 def generate_property_id(url: str) -> str:
 	"""Gera ID hexadecimal único a partir da URL do imóvel.
@@ -50,25 +58,59 @@ def extract_property_data(article_html: str) -> dict:
 		desc_elem = soup.find("p", {"itemprop": "description"})
 		description = desc_elem.text.strip()[:200] if desc_elem else "N/A"
 		
-		# Características (Quartos, Suítes, Vagas)
+		# Características (Quartos, Suítes, Vagas, Área) - Procura por divs que contenham a classe 'border-1'
+		# com mais flexibilidade (não exigindo ordem específica)
 		quartos = "N/A"
 		suites = "N/A"
 		vagas = "N/A"
 		area_text = "N/A"
 		
-		feature_divs = soup.find_all("div", class_="border-1 py-0 px-2 bg-white body-small rounded-pill")
-		if len(feature_divs) >= 1:
-			quartos = feature_divs[0].text.strip()
-		if len(feature_divs) >= 2:
-			suites = feature_divs[1].text.strip()
-		if len(feature_divs) >= 3:
-			vagas = feature_divs[2].text.strip()
-		if len(feature_divs) >= 4:
-			area_text = feature_divs[3].text.strip()
+		# Procura por divs com classe contendo "border-1" (mais robusto)
+		feature_divs = soup.find_all("div", class_=lambda x: x and "border-1" in x and "rounded-pill" in x)
 		
-		# Imagem
-		img_elem = soup.find("img", loading="lazy")
-		image_url = img_elem.get("src", "N/A") if img_elem else "N/A"
+		for div in feature_divs:
+			text = div.text.strip()
+			# Extrai área (procura por "m²")
+			if "m²" in text and area_text == "N/A":
+				area_text = text
+			# Se não encontrou área por m², procura outros padrões
+			elif quartos == "N/A" and "quarto" in text.lower():
+				quartos = text
+			elif suites == "N/A" and "suíte" in text.lower():
+				suites = text
+			elif vagas == "N/A" and ("vaga" in text.lower() or "garagem" in text.lower()):
+				vagas = text
+		
+		# Fallback: se não encontrou por padrão, usa ordem das divs
+		if quartos == "N/A" or suites == "N/A" or vagas == "N/A":
+			if len(feature_divs) >= 1 and quartos == "N/A":
+				quartos = feature_divs[0].text.strip()
+			if len(feature_divs) >= 2 and suites == "N/A":
+				suites = feature_divs[1].text.strip()
+			if len(feature_divs) >= 3 and vagas == "N/A":
+				vagas = feature_divs[2].text.strip()
+		
+		# Imagens - Coleta TODAS as imagens dentro da article (excluindo base64)
+		images = []
+		img_elems = soup.find_all("img")
+		
+		for img in img_elems:
+			src = img.get("src", "")
+			# Filtra apenas URLs reais (não base64 ou GIFs genéricos)
+			if src and not src.startswith("data:") and "dfimoveis.com.br" in src:
+				images.append(src)
+		
+		# Se não encontrou imagens reais, tenta qualquer img com loading="lazy"
+		if not images:
+			img_elem = soup.find("img", loading="lazy")
+			if img_elem:
+				src = img_elem.get("src", "")
+				if src and not src.startswith("data:"):
+					images.append(src)
+		
+		# Imagem principal (para compatibilidade com código anterior)
+		image_url = images[0] if images else "N/A"
+		images_json = images if images else ["N/A"]
 		
 		# Imobiliária
 		company = "N/A"
@@ -91,6 +133,7 @@ def extract_property_data(article_html: str) -> dict:
 			"vagas": vagas,
 			"area": area_text,
 			"imagem": image_url,
+			"imagens": images_json,
 			"imobiliaria": company,
 			"data_extracao": datetime.now().isoformat(),
 		}
@@ -218,6 +261,62 @@ def save_to_json(properties: list[dict], filename: str = "imoveis.json") -> None
 	print(f"✓ Dados salvos em: {filepath}")
 
 
+def upload_to_adls(properties: list[dict], storage_account: str = "rentmasterstorageaccount", 
+                   container: str = "bronze", folder: str = "raw") -> bool:
+	"""Faz upload dos dados em JSON para Azure Data Lake Storage Gen2.
+	
+	Args:
+		properties: Lista de imóveis extraídos
+		storage_account: Nome da storage account no Azure
+		container: Nome do container (bronze por padrão)
+		folder: Pasta dentro do container (raw por padrão)
+	
+	Returns:
+		True se upload bem-sucedido, False caso contrário
+	"""
+	if not AZURE_AVAILABLE:
+		print("✗ Azure SDKs não disponíveis. Instale: pip install azure-storage-blob azure-identity")
+		return False
+	
+	if not properties:
+		print("Nenhum imóvel para fazer upload")
+		return False
+	
+	try:
+		print("\n☁️ Uploading to Azure Data Lake Storage Gen2...")
+		
+		# Credenciais (usa DefaultAzureCredential: az login, env vars, ou managed identity)
+		credential = DefaultAzureCredential()
+		
+		# Cliente do Blob Storage
+		blob_service_client = BlobServiceClient(
+			account_url=f"https://{storage_account}.blob.core.windows.net",
+			credential=credential
+		)
+		
+		# Cliente do container
+		container_client = blob_service_client.get_container_client(container)
+		
+		# Nome do arquivo com timestamp
+		timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+		blob_name = f"{folder}/imoveis_{timestamp}.json"
+		
+		# Prepara dados JSON
+		json_data = json.dumps(properties, ensure_ascii=False, indent=2).encode("utf-8")
+		
+		# Upload
+		blob_client = container_client.get_blob_client(blob_name)
+		blob_client.upload_blob(json_data, overwrite=True)
+		
+		print(f"   ✓ {len(properties)} imóveis enviados para:")
+		print(f"   📁 {storage_account}/{container}/{blob_name}")
+		return True
+		
+	except Exception as e:
+		print(f"   ✗ Erro ao fazer upload: {e}")
+		return False
+
+
 def parse_args() -> argparse.Namespace:
 	parser = argparse.ArgumentParser(
 		description="Scraper de imóveis para aluguel - DFimoveis.com.br"
@@ -246,6 +345,16 @@ def parse_args() -> argparse.Namespace:
 		default=1,
 		help="Número de páginas a extrair (padrão: 1)",
 	)
+	parser.add_argument(
+		"--upload-to-adls",
+		action="store_true",
+		help="Faz upload dos dados para Azure Data Lake Storage Gen2 (bronze/raw/)",
+	)
+	parser.add_argument(
+		"--storage-account",
+		default="rentmasterstorageaccount",
+		help="Nome da storage account Azure (padrão: rentmasterstorageaccount)",
+	)
 	return parser.parse_args()
 
 
@@ -255,7 +364,10 @@ def main() -> None:
 	print(f"\n🔍 Iniciando scraping")
 	print(f"   URL: {args.url}")
 	print(f"   Páginas: {args.num_pages}")
-	print(f"   Formato: {args.format}\n")
+	print(f"   Formato: {args.format}")
+	if args.upload_to_adls:
+		print(f"   Upload: ADLS Gen2 ({args.storage_account})")
+	print()
 	
 	try:
 		properties = scrape_properties(
@@ -275,12 +387,18 @@ def main() -> None:
 			if args.format in ["json", "both"]:
 				save_to_json(properties)
 			
+			# Upload para ADLS Gen2 (se solicitado)
+			if args.upload_to_adls:
+				upload_to_adls(properties, storage_account=args.storage_account)
+			
 			# Exibe resumo
 			print("\n📊 Resumo dos primeiros imóveis:")
 			for i, prop in enumerate(properties[:3], 1):
 				print(f"\n{i}. {prop['titulo']} (ID: {prop['id_hex']})")
 				print(f"   Preço: R$ {prop['preco']}")
 				print(f"   {prop['quartos']} | {prop['suites']} | {prop['vagas']} | {prop['area']}")
+				if prop.get('imagens') and prop['imagens'][0] != "N/A":
+					print(f"   Imagens: {len(prop['imagens'])} arquivo(s)")
 		else:
 			print("✗ Nenhum imóvel encontrado")
 	

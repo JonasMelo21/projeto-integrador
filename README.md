@@ -4,8 +4,9 @@ Uma plataforma inteligente e orientada a dados que extrai imóveis para aluguel 
 
 **Status:** 
 
-- Sprint 1 - Esperando Aprovação (⏳) 
-- Sprint 2 - Desenvolvimento Iniciado (🔄)
+- Sprint 1 - Concluído ✅
+- Sprint 2 - Scraper Funcional + Docker + ADLS Gen2 (🔄 Parcialmente Concluído)
+- Sprint 3+ - Pendente ⏳
 
 ---
 
@@ -182,23 +183,29 @@ Projeto Integrador III 2.0/
 - ✅ Taskboard estruturado (Azure Boards)
 - ✅ Documentação técnica (CONTEXT.md, README.md, SCRAPER_GUIDE.md)
 
-### 🔄 Sprint 2: Descoberta e Exploração de Imóveis (PRÓXIMO)
+### 🔄 Sprint 2: Descoberta e Exploração de Imóveis (INICIADO)
 
 **Epic 2 - Vitrine, Scraper e Filtros:**
-- [ ] Feature 2.1 - Vitrine e Scraping Base
-  - Scraper funcional com paginação/dedup
-  - ID hexadecimal único (SHA-256)
-  - Jupyter Notebook + EDA
-  - FastAPI backend (rotas iniciais)
-  - Frontend React (cards e integração)
-  
-- [ ] Feature 2.2 - Busca e Filtros Dinâmicos
-  - Rotas parametrizadas na API
-  - Queries SQL otimizadas (filtros)
-  - Barra de filtros no frontend
-  - Testes de performance
+- [x] **Scraper Funcional** ✅
+  - ✅ Extrai 30+ imóveis por página
+  - ✅ Paginação com deduplicação automática
+  - ✅ **Área correta**: procura por "m²" em múltiplos elementos
+  - ✅ **Múltiplas imagens**: array de URLs (filtra base64)
+  - ✅ ID hexadecimal único (SHA-256, 12 chars)
+  - ✅ Exporta em CSV + JSON
+  - ✅ Docker containerizado com SDKs Azure
 
-**Dados:** Imóveis extraídos com 30+ por página, filtráveis
+- [x] **Upload para ADLS Gen2** ✅
+  - ✅ Novo parâmetro `--upload-to-adls`
+  - ✅ Autenticação via `DefaultAzureCredential()` (Managed Identity ready)
+  - ✅ JSON enviado com sucesso para `bronze/raw/`
+  
+- [ ] Jupyter Notebook + EDA
+- [ ] FastAPI backend (rotas iniciais)
+- [ ] Frontend React (cards e integração)
+- [ ] Feature 2.2 - Busca e Filtros Dinâmicos
+
+**Dados:** 30+ imóveis únicos extraídos com área e imagens
 
 ### 🎨 Sprint 3+: Inteligência e Jornada
 

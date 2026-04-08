@@ -18,7 +18,7 @@
 ## 🛠️ Stack Tecnológico
 
 ### Coleta de Dados (Web Scraping)
-- **Python:** BeautifulSoup, Playwright, Selenium
+- **Python:** BeautifulSoup, Playwright
 - **Containerização:** Docker (Azure Container Instances via Azure Data Factory)
 - **Ferramentas:** `uv` para gerenciamento de dependências
 
@@ -301,7 +301,139 @@ cat .time-tracking/archive/wakatime-*.json
 
 ---
 
-## ✅ Status Sprint 1: Fundações e Concepção do Produto (CONCLUÍDO)
+### 12. Tratamento de Erros de Integração com APIs (REGRA CRÍTICA!)
+
+**Objetivo:** Estabelecer protocolo padrão para falhas em integrações com APIs externas (WakaTime, Azure DevOps, etc).
+
+**Regra de Ouro:**
+Quando uma integração com API externa retorna erro de autenticação/autorização (401, 403) ou credencial inválida:
+1. ⛔ **PARAR IMEDIATAMENTE** a execução do script/task
+2. 📢 **REPORTAR** o erro detalhadamente ao usuário
+3. ⏸️ **AGUARDAR** instruções/credenciais corretas do usuário
+4. ❌ **NÃO CONTINUAR** com fallbacks automáticos ou valores padrão
+
+**Exemplos de Erros que Acionam Esta Regra:**
+```
+- 401 Unauthorized (API key inválida, expirada ou revogada)
+- 403 Forbidden (Permissões insuficientes)
+- "Invalid credentials" (Texto de erro da API)
+- "Authentication failed" (Falha na autenticação)
+- "API key not found" (Chave não configurada corretamente)
+```
+
+**Implementação em Código:**
+```python
+# ✅ CORRETO - Parar e reportar
+try:
+    response = requests.get(
+        "https://api.exemplo.com/data",
+        headers={"Authorization": f"Bearer {api_key}"}
+    )
+    response.raise_for_status()
+except requests.exceptions.HTTPError as e:
+    if e.response.status_code in [401, 403]:
+        print(f"\n❌ ERRO CRÍTICO DE AUTENTICAÇÃO:")
+        print(f"   Status: {e.response.status_code}")
+        print(f"   Mensagem: {e.response.text}")
+        print(f"   Ação: Verifique a API key em .env e tente novamente\n")
+        sys.exit(1)  # ← Parar aqui
+    else:
+        # Outros erros podem ter retry logic
+        pass
+
+# ❌ INCORRETO - Silenciar erros
+try:
+    response.raise_for_status()
+except:
+    pass  # Continuar como se nada tivesse acontecido
+```
+
+**Regras Específicas por Serviço:**
+
+| Serviço | Erro | Ação |
+|---------|------|------|
+| **WakaTime** | 401 / API Key inválida | Parar. Validar em https://wakatime.com/settings/account |
+| **Azure DevOps** | 401 / PAT expirado | Parar. Regenerar PAT em Azure DevOps |
+| **OpenAI** | 401 / Chave inválida | Parar. Verificar quota e validade da chave |
+| **PostgreSQL** | Connection refused | Parar. Verificar string de conexão e credenciais |
+
+**Comunicação ao Usuário:**
+```
+❌ API INVÁLIDA - ERRO CRÍTICO
+─────────────────────────────────────────
+Serviço: WakaTime
+Erro: 401 Unauthorized
+Mensagem: API key inválida ou expirada
+
+O que fazer:
+1. Verifique a chave em .env
+2. Regenere se necessário em https://wakatime.com/settings/account
+3. Execute novamente
+
+Aguardando seu feedback...
+```
+
+**Nunca Faça:**
+- ❌ Usar valores default/mock quando API falha
+- ❌ Continuar execução com dados parciais
+- ❌ Esconder mensagens de erro
+- ❌ Tentar múltiplas retentativas sem informar o usuário
+- ❌ Assumir que o erro se resolve sozinho
+
+---
+
+### 13. WakaTime - Status Bloqueado (INVESTIGAÇÃO NECESSÁRIA)
+
+**Status:** ❌ **NÃO FUNCIONAL** - Setup completo mas API retorna 401 Unauthorized persistente
+
+**O que foi implementado:**
+- ✅ Scripts criados: `test_wakatime.py`, `export_wakatime.py`, Git hook
+- ✅ Dependências instaladas: `requests`, `python-dotenv`
+- ✅ Configuração: `.env` com WAKATIME_API_KEY
+- ✅ `.wakatime.cfg` atualizado com API key
+- ✅ Múltiplas API keys testadas (3 diferentes)
+
+**problema Relatado:**
+```
+❌ Erro de Autenticação: 401 Unauthorized
+   URL: https://wakatime.com/api/v1/users/current
+   Mensagem: API Key inválida ou expirada
+```
+
+**Investigações Realizadas:**
+1. ✅ API keys testadas no arquivo `.env`
+2. ✅ API keys testadas no `~/.wakatime.cfg`
+3. ✅ Email da conta WakaTime confirmado
+4. ✅ Sintaxe da API key validada (formato: `waka_xxxx`)
+5. ✅ Diferentes API keys regeneradas
+
+**Possíveis Causas:**
+- API keys regeneradas podem estar expiradas ou revogadas
+- Conta WakaTime pode estar em estado suspenso
+- Possível problema de permissões da API
+- Rate limiting ou bloqueio de IP
+
+**Como Reativar (quando resolvido):**
+1. Acessar https://wakatime.com/settings/account
+2. Verificar status da conta
+3. Regenerar API key completamente
+4. Copiar nova chave para `.env` e `.wakatime.cfg`
+5. Executar `uv run python .time-tracking/test_wakatime.py`
+6. Se sucesso, remover este aviso e atualizar esta seção
+
+**Alternativa (Implementada):**
+- Seção 11 (Time Tracking Automático) ainda documenta o sistema para **quando WakaTime voltar a funcionar**
+- Scripts já estão prontos e testados (exceto autenticação)
+- Git hook está instalado e pronto
+
+**GitHub Issue Criado:**
+- Issue #X: "WakaTime API retorna 401 Unauthorized mesmo com credenciais corretas"
+- Labels: `bug`, `blocked`, `devops`, `investigation`
+- Status: INVESTIGAÇÃO NECESSÁRIA
+
+---
+
+
 
 ### 📊 Epic 1: Fundações e Concepção do Produto
 
@@ -358,18 +490,31 @@ Campos por imóvel:
 
 ---
 
-## 🚀 Sprint 2: Descoberta e Exploração de Imóveis (PRÓXIMO)
+## 🚀 Sprint 2: Descoberta e Exploração de Imóveis (INICIADO) 🔄
 
 ### 🔷 Epic 2: Descoberta e Exploração de Imóveis
 
 **Feature 2.1: Vitrine e Scraping Base**
-- [ ] **Scraper Funcional** (`scrapper/scrapper.py`)
-  - Extração de imóveis por página
-  - Suporte a paginação
-  - Deduplicação automática de IDs
-  - ID Hexadecimal único (SHA-256)
-  - Saída em CSV e JSON
-  - Documentação completa
+- [x] **Scraper Funcional** (`scrapper/scrapper.py`) ✅
+  - ✅ Extração de imóveis por página (30+ por página)
+  - ✅ Suporte a paginação com deduplicação automática de IDs
+  - ✅ ID Hexadecimal único (SHA-256, 12 chars)
+  - ✅ Extração de ÁREA corrigida (procura por "m²")
+  - ✅ Extração de MÚLTIPLAS IMAGENS (array de URLs, filtrando base64)
+  - ✅ Saída em CSV e JSON
+  - ✅ Documentação completa no [docs/SCRAPER_GUIDE.md](docs/SCRAPER_GUIDE.md)
+
+- [x] **Docker Containerizado** ✅
+  - ✅ Dockerfile pronto com SDKs Azure
+  - ✅ Build bem-sucedido
+  - ✅ Testado localmente (2 páginas = 30 imóveis extraídos)
+  - ✅ Suporte a env vars (NUM_PAGES, TIMEOUT_MS, FORMAT, UPLOAD_TO_ADLS)
+
+- [x] **Upload para ADLS Gen2** ✅
+  - ✅ Novo parâmetro `--upload-to-adls` no scraper
+  - ✅ Autenticação via `DefaultAzureCredential()` (Managed Identity ready)
+  - ✅ Upload testado: Arquivo JSON enviado com sucesso
+  - ✅ 📍 Destino confirmado: `rentmasterstorageaccount/bronze/raw/imoveis_*.json`
 
 - [ ] **Jupyter Notebook** (`notebooks/eda.ipynb`)
   - Carregamento e exploração de dados

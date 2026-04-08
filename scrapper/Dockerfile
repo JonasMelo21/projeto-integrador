@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir --upgrade pip setuptools
 WORKDIR /app
 
 # Copiar e instalar dependências de scraping
-RUN pip install --no-cache-dir beautifulsoup4 playwright
+RUN pip install --no-cache-dir beautifulsoup4 playwright azure-storage-blob azure-identity
 
 # Install Playwright browsers (essencial!)
 RUN playwright install chromium
