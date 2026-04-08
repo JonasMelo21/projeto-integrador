@@ -628,6 +628,97 @@ Campos por imóvel:
 
 ---
 
+---
+
+## 🏗️ Arquitetura do Sistema (Visão Completa)
+
+### Diagrama Visual - Fluxo End-to-End
+
+Consulte o diagrama visual completo em:
+
+📊 **[docs/diagrama_arq_rent_master.png](../docs/diagrama_arq_rent_master.png)**
+
+Este diagrama ilustra toda a arquitetura Azure do RentMaster com os fluxos de dados entre componentes:
+
+### Componentes Principais
+
+#### 1. **Camada de Ingestão e Orquestração**
+- **Azure Data Factory:** Orquestra pipelines de ingestão
+- **web-scraper Python:** Executa em container (Docker) via ACI ou agendado
+- **Fontes externas:** Portais imobiliários (DFimoveis, etc.)
+
+#### 2. **Camada de Armazenamento - Data Lake (ADLS Gen2)**
+- **Container Bronze:** Dados brutos extraídos (`/bronze/raw/`)
+- **Container Silver:** Dados limpos e validados (`/silver/cleaned/`)
+- **Container Gold:** Dados curados prontos para consumo (`/gold/curated/`)
+- **Padrão Medalhão:** Qualidade progressiva de Bronze → Silver → Gold
+
+#### 3. **Camada de Transformação**
+- **Databricks Workspace:** Orquestra processamento PySpark
+- **Notebooks PySpark:** Executam ETL (Limpeza, dedup, enriquecimento)
+- **MLlib/Scikit:** Feature engineering para modelos de preço
+
+#### 4. **Camada de Integração**
+- **Banco de Dados:** Azure Database for PostgreSQL
+- **Tabelas principais:**
+  - `properties` (imóveis extraídos do Gold)
+  - `user_favorites` (favoritos do usuário)
+  - `price_predictions` (scores ML)
+  - `chat_history` (histórico de conversas)
+
+#### 5. **Camada de Aplicação (Backend)**
+- **FastAPI** hospedado em **Azure App Service**
+- **Rotas principais:**
+  - `GET /api/properties` → Lista imóveis (queries PostgreSQL)
+  - `POST /api/chat` → Chatbot (Vanna.ai Text-to-SQL)
+  - `POST /api/predict-price` → ML Inference (Azure Machine Learning)
+  - `GET /api/favorites` → Favoritos do usuário
+- **Autenticação:** Azure Entra ID (Microsoft Entra)
+
+#### 6. **Camada de Aplicação (Frontend)**
+- **React + Tailwind CSS** hospedado em **Azure Static Web Apps**
+- **Componentes principais:**
+  - Listagem de imóveis com filtros dinâmicos
+  - Cards com preço, localização, imagens
+  - Barra de filtros (área, preço, localidade)
+  - Chatbot flutuante integrado
+  - Página de favoritos
+
+#### 7. **Camada de IA e ML**
+- **Vanna.ai + LangChain:** Traduz linguagem natural para SQL
+- **Azure Machine Learning:** Hosting do modelo de preços
+- **Modelo XGBoost:** Classifica preço (Caro/Justo/Barato)
+
+### Fluxo Completo
+
+```
+1. Web Scraper (local/Docker) → extrai dados
+                                  ↓
+2. Azure Data Factory → dispara ingestão para ADLS Bronze
+                        ↓
+3. Databricks → processa Bronze → Silver
+                (limpeza, dedup, enriquecimento)
+                        ↓
+4. Databricks + ML → enriquece e feature-engineering → Gold
+                        ↓
+5. PostgreSQL ← carregado do Gold
+                        ↓
+6. FastAPI Backend ← consome PostgreSQL
+    ├─ GET /properties
+    ├─ POST /chat (Text-to-SQL via Vanna)
+    └─ POST /predict-price (ML Endpoint)
+                        ↓
+7. React Frontend + Static Web Apps
+    ├─ Listagem com filtros
+    ├─ Cards de imóveis
+    ├─ Chatbot (conversas)
+    └─ Favoritos
+                        ↓
+8. Usuário Final → visualiza e interage com dados
+```
+
+---
+
 ## 🔄 Fluxo de Dados (Visão Geral)
 
 ```

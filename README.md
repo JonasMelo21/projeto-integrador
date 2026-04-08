@@ -233,6 +233,21 @@ Projeto Integrador III 2.0/
 
 ---
 
+## 🏗️ Arquitetura Visual
+
+![Diagrama de Arquitetura RentMaster](docs/diagrama_arq_rent_master.png)
+
+**Componentes principais:**
+- 🔷 **Ingestão & Orquestração:** Azure Data Factory + Scraper Python
+- 💾 **Data Lake:** ADLS Gen2 com padrão Medalhão (Bronze/Silver/Gold)
+- 🔄 **Transformação:** Databricks Workspace com PySpark
+- 🗄️ **Database:** Azure Database for PostgreSQL
+- 🚀 **Backend:** Azure App Service (FastAPI)
+- 🎨 **Frontend:** Azure Static Web Apps (React)
+- 🤖 **IA:** Vanna.ai + LangChain para chatbot Text-to-SQL
+
+---
+
 ## 🛠️ Stack Tecnológico (Azure-First)
 
 | Camada | Tecnologias | Status |
