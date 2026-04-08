@@ -221,6 +221,7 @@ ml = ["scikit-learn", "xgboost", "mlflow"]
 notebook = ["jupyter", "jupyterlab", "pandas", "matplotlib"]
 test = ["pytest", "pytest-cov"]
 dev = ["ruff", "black", "mypy"]
+time-tracking = ["requests", "python-dotenv"]
 ```
 
 **Comandos:**
@@ -230,6 +231,72 @@ uv sync --group scraping             # Sync scraping group only
 uv add --group data pandas           # Add to specific group
 uv run python script.py              # Run script with uv Python
 uv run pytest                        # Run tests
+```
+
+### 11. Time Tracking Automático (NOVA REGRA - IMPORTANTE!)
+
+**Objetivo:** Rastrear automaticamente horas dedicadas a cada funcionalidade/módulo do projeto.
+
+**Como funciona:**
+1. **Setup WakaTime** (gratuito):
+   - Instalar extensão VS Code: "WakaTime"
+   - Criar conta: https://wakatime.com
+   - Copiar API Key e adicionar em `.env`: `WAKATIME_API_KEY=xxx`
+
+2. **Configuração Automática:**
+   - Git hook `.git/hooks/post-commit` exporta dados ao fazer commit
+   - Dados salvos em `.time-tracking/archive/` (não vai pro repositório)
+   - Arquivo ignorado em `.gitignore`
+
+3. **Exportar Dados:**
+   ```bash
+   uv sync --group time-tracking        # Instalar dependências
+   python .time-tracking/export_wakatime.py
+   ```
+
+4. **Resultado:**
+   ```json
+   // .time-tracking/archive/wakatime-20260408.json
+   {
+     "2026-04-08": {
+       "total_hours": 31.25,
+       "projects": {
+         "scraper": { "hours": 28.5, "percent": 91.2 },
+         "backend": { "hours": 2.75, "percent": 8.8 }
+       }
+     }
+   }
+   ```
+
+5. **Para Preenchimento Manual no Azure DevOps:**
+   - Abra o arquivo JSON gerado
+   - Leia as horas totais du projeto
+   - Preencha manualmente no card da task (ou use MCP después)
+
+**Regras Importantes:**
+- ✅ WakaTime é gratuito (com limite de 7 dias de histórico)
+- ✅ Dados locais são preservados em `.time-tracking/archive/`
+- ✅ Git hook roda automaticamente após commits em branches de feature/fix
+- ✅ Arquivo `.time-tracking/` é ignorado pelo git (dados locais apenas)
+- ❌ Não versionamos dados de time tracking no repositório
+- ❌ Arquivo `.env` com API key também é ignorado (segurança)
+
+**Iniciar nova funcionalidade:**
+```bash
+# 1. Criar branch
+git checkout -b feature/nova-funcionalidade
+
+# 2. Trabalhar normalmente (WakaTime rastreia)
+
+# 3. Fazer commits semânticos
+git commit -m "feat: implementa algo novo"
+# ← Git hook executa export_wakatime.py automaticamente
+
+# 4. Ao terminar, exportar manualmente se quiser
+python .time-tracking/export_wakatime.py
+
+# 5. Verificar horas e preencher em Azure DevOps
+cat .time-tracking/archive/wakatime-*.json
 ```
 
 ---
