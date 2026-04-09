@@ -71,3 +71,4 @@ htmlcov/
 # arquivos de ambiente
 .venv/
 
+*.Zone.Identifier
