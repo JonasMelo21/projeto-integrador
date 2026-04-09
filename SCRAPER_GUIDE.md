@@ -47,10 +47,11 @@ O scraper coleta as seguintes informações para cada imóvel:
 | `quartos` | string | Quantidade de quartos | 3 Quartos |
 | `suites` | string | Quantidade de suítes | 3 Suítes |
 | `vagas` | string | Vagas de garagem | 4 Vagas |
-| `area` | string | Metragem (se disponível) | N/A |
+| `area` | string | Metragem (se disponível) | 450 m² |
 | `imagem` | string | URL da imagem principal | https://img.dfimoveis.com.br/... |
+| `imagens` | array | Array com URLs de todas as imagens | ["https://img.dfimoveis.com.br/...", ...] |
 | `imobiliaria` | string | Nome da imobiliária | Neves Teixeira Imóveis |
-| `data_extracao` | string | ISO timestamp da coleta | 2026-04-07T06:05:27.120767 |
+| `data_extracao` | string | ISO timestamp da coleta | 2026-04-08T21:36:38.455604 |
 
 ---
 
@@ -169,10 +170,13 @@ uv run scrapper/scrapper.py "https://www.dfimoveis.com.br/aluguel/df/asa-norte/i
   "quartos": "3 Quartos",
   "suites": "3 Suítes",
   "vagas": "4 Vagas",
-  "area": "N/A",
+  "area": "450 m²",
   "imagem": "https://img.dfimoveis.com.br/fotos/1265544/521dc7a1feb3cf1ba77eaf7ec2dd612c.webp",
+  "imagens": [
+    "https://img.dfimoveis.com.br/fotos/1265544/521dc7a1feb3cf1ba77eaf7ec2dd612c.webp"
+  ],
   "imobiliaria": "Neves Teixeira Imóveis",
-  "data_extracao": "2026-04-07T06:05:27.120767"
+  "data_extracao": "2026-04-08T21:36:38.461832"
 }
 ```
 
