@@ -273,6 +273,91 @@ with open("data/imoveis.json", "r", encoding="utf-8") as f:
 
 ---
 
+## ☁️ Execução via Azure Data Factory (Pipeline Automático)
+
+O scraper foi integrado em um **pipeline orquestrado no Azure Data Factory (ADF)** que executa automaticamente via Container Instances (ACI).
+
+### Como Funciona o Pipeline
+
+1. **Disparo:** Web Activity no ADF dispara uma requisição REST para criar um container ACI
+2. **Autenticação:** Container usa Managed Identity `id-scraper-rentmaster` para acessar ADLS Gen2
+3. **Execução:** Imagem Docker `scraper:latest` executa com args: `--num-pages 1 --format json --upload-to-adls`
+4. **Persistência:** Dados são salvos em `bronze/raw/imoveis_YYYYMMDD_HHMMSS.json`
+5. **Limpeza:** Container é removido após conclusão (exitCode 0)
+
+### Status da Validação
+
+**✅ Pipeline Validado em 2026-04-14**
+
+| Componente | Status | Detalhes |
+|-----------|--------|----------|
+| **ADF Pipeline** | ✅ Succeeded | RUN_ID: `a1e0aead-3852-11f1-ae22-24b2b90b4066` |
+| **ACI Container** | ✅ exitCode 0 | Duração: 20 segundos (22:39:52 → 22:40:12) |
+| **ADLS Blob** | ✅ Novo arquivo | `imoveis_20260414_224008.json` (24188 bytes) |
+| **Conteúdo JSON** | ✅ Válido | 30+ imóveis com campos completos |
+| **Deduplicação** | ✅ Funcional | IDs únicos detectados corretamente |
+
+### Disparar o Pipeline Manualmente (Azure CLI)
+
+Para testar manualmente:
+
+```bash
+# Obter credenciais necessárias
+RUN_ID=$(az datafactory pipeline create-run \
+  -g rg_rent_master_dev \
+  --factory-name rentmaster-dataFactory \
+  -n RunScraperContainer \
+  --query runId -o tsv)
+
+echo "Pipeline disparado com RUN_ID: $RUN_ID"
+
+# Acompanhar execução
+az datafactory pipeline-run query-by-factory \
+  -g rg_rent_master_dev \
+  --factory-name rentmaster-dataFactory \
+  --filters operand=PipelineName operator=Equals values=RunScraperContainer \
+  --query "value[?runId=='$RUN_ID']|[0].{status:status,runStart:runStart,runEnd:runEnd}" -o json
+```
+
+### Monitorar Resultado no ADLS Gen2
+
+```bash
+# Listar últimos 3 arquivos criados
+az storage blob list \
+  --account-name rentmasterstorageaccount \
+  --container-name bronze \
+  --auth-mode login \
+  --prefix raw/ \
+  --query "sort_by(@,&properties.lastModified)[-3:].{name:name,lastModified:properties.lastModified,size:properties.contentLength}" \
+  -o table
+```
+
+### Arquitetura Resumida
+
+```
+[Azure Data Factory Pipeline]
+         ↓
+   [Web Activity - HTTP REST]
+         ↓
+[Azure Container Instances - Create]
+         ↓
+[Docker Container - scraper:latest]
+  └─ Managed Identity (id-scraper-rentmaster)
+  └─ ENV: NUM_PAGES=1, FORMAT=json, AZURE_CLIENT_ID=c01e7186-d5f2-40b9-856d-db4e803df76b
+         ↓
+[Azure Data Lake Storage Gen2]
+  └─ bronze/raw/imoveis_YYYYMMDD_HHMMSS.json
+```
+
+### Próximos Passos
+
+- [ ] Agendar pipeline para executar diariamente (Trigger em ADF)
+- [ ] Adicionar Silver layer com transformações PySpark no Databricks
+- [ ] Implementar Gold layer com dados curados
+- [ ] Criar alertas se arquivo não for criado dentro de X minutos
+
+---
+
 ## 🔧 Troubleshooting
 
 ### Erro: "Módulo não encontrado"

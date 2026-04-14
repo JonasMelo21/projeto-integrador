@@ -307,6 +307,9 @@ def upload_to_adls(properties: list[dict], storage_account: str = "rentmastersto
 		# Upload
 		blob_client = container_client.get_blob_client(blob_name)
 		blob_client.upload_blob(json_data, overwrite=True)
+		blob_properties = blob_client.get_blob_properties()
+		if blob_properties.size == 0:
+			raise RuntimeError(f"Blob '{blob_name}' foi criado, mas está vazio")
 		
 		print(f"   ✓ {len(properties)} imóveis enviados para:")
 		print(f"   📁 {storage_account}/{container}/{blob_name}")
@@ -389,7 +392,9 @@ def main() -> None:
 			
 			# Upload para ADLS Gen2 (se solicitado)
 			if args.upload_to_adls:
-				upload_to_adls(properties, storage_account=args.storage_account)
+				upload_ok = upload_to_adls(properties, storage_account=args.storage_account)
+				if not upload_ok:
+					raise RuntimeError("Falha no upload para o ADLS Gen2")
 			
 			# Exibe resumo
 			print("\n📊 Resumo dos primeiros imóveis:")

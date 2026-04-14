@@ -5,7 +5,7 @@ Uma plataforma inteligente e orientada a dados que extrai imóveis para aluguel 
 **Status:** 
 
 - Sprint 1 - Concluído ✅
-- Sprint 2 - Scraper Funcional + Docker + ADLS Gen2 (🔄 Parcialmente Concluído)
+- Sprint 2 - Scraper Funcional + Docker + ADLS Gen2 (✅ Feature 2.1 Validada)
 - Sprint 3+ - Pendente ⏳
 
 ---
@@ -183,10 +183,11 @@ Projeto Integrador III 2.0/
 - ✅ Taskboard estruturado (Azure Boards)
 - ✅ Documentação técnica (CONTEXT.md, README.md, SCRAPER_GUIDE.md)
 
-### 🔄 Sprint 2: Descoberta e Exploração de Imóveis (INICIADO)
+### ✅ Sprint 2: Descoberta e Exploração de Imóveis (FEATURE 2.1 CONCLUÍDA)
 
-**Epic 2 - Vitrine, Scraper e Filtros:**
-- [x] **Scraper Funcional** ✅
+**Epic 2.1 - Scraper + Docker + ADLS Gen2 Pipeline (CONCLUÍDO ✅)**
+
+- ✅ **Scraper Funcional**
   - ✅ Extrai 30+ imóveis por página
   - ✅ Paginação com deduplicação automática
   - ✅ **Área correta**: procura por "m²" em múltiplos elementos
@@ -195,17 +196,31 @@ Projeto Integrador III 2.0/
   - ✅ Exporta em CSV + JSON
   - ✅ Docker containerizado com SDKs Azure
 
-- [x] **Upload para ADLS Gen2** ✅
-  - ✅ Novo parâmetro `--upload-to-adls`
-  - ✅ Autenticação via `DefaultAzureCredential()` (Managed Identity ready)
-  - ✅ JSON enviado com sucesso para `bronze/raw/`
-  
+- ✅ **Upload para ADLS Gen2**
+  - ✅ Parâmetro `--upload-to-adls` funcional
+  - ✅ Autenticação via `DefaultAzureCredential()` com Managed Identity
+  - ✅ JSON persistido em `bronze/raw/` com timestamp
+  - ✅ Validação de blob após upload (sem arquivos vazios)
+
+- ✅ **Pipeline End-to-End no Azure Data Factory**
+  - ✅ Web Activity dispara container ACI via REST API
+  - ✅ Container executa com exitCode 0
+  - ✅ Arquivo novo em `bronze/raw/` a cada execução
+  - ✅ Pipeline marca "Succeeded" automaticamente
+  - ✅ **Validado em: 2026-04-14 22:38 UTC**
+
+- ✅ **Dados Coletados**
+  - 30+ imóveis únicos por execução
+  - Estrutura JSON completa com 13 campos
+  - Deduplicação funcional em múltiplas páginas
+
+**Próximas Features (Sprint 2):**
 - [ ] Jupyter Notebook + EDA
 - [ ] FastAPI backend (rotas iniciais)
 - [ ] Frontend React (cards e integração)
 - [ ] Feature 2.2 - Busca e Filtros Dinâmicos
 
-**Dados:** 30+ imóveis únicos extraídos com área e imagens
+**Commit de Referência:** `2ad201e` (Merged PR 3 - Feature 2.1 Completa)
 
 ### 🎨 Sprint 3+: Inteligência e Jornada
 

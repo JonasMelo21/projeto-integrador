@@ -21,10 +21,7 @@ scraping = [
     "beautifulsoup4>=4.14.3",
     "playwright>=1.58.0",
 ]
-time-tracking = [
-    "requests>=2.31.0",
-    "python-dotenv>=1.0.0",
-]
+
 notebook = [
     "jupyter>=1.0.0",
     "jupyterlab>=4.0.0",

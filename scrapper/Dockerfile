@@ -40,4 +40,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=2 \
 
 # Executar scraper com args padrão
 # Use: docker run -e NUM_PAGES=5 ...
-ENTRYPOINT ["sh", "-c", "python scrapper.py --num-pages $NUM_PAGES --format $FORMAT"]
+ENTRYPOINT ["sh", "-c", "python scrapper.py --num-pages $NUM_PAGES --format $FORMAT --upload-to-adls"]
