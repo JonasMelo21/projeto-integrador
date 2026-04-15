@@ -10,32 +10,104 @@ Uma plataforma inteligente e orientada a dados que extrai imóveis para aluguel 
 
 ---
 
-## 📚 Documentação Principal
+## 📚 Documentação Estruturada
 
-Este projeto segue **regras rigorosas de codificação e arquitetura**. Antes de codificar ou fazer alterações, SEMPRE consulte:
+Este projeto segue **regras rigorosas de codificação e arquitetura**. Comece por aqui:
 
-### 1. **[CONTEXT.md](CONTEXT.md)** - LEITURA OBRIGATÓRIA PARA AGENTES IA
-   - 📋 **Regras de Codificação:** Idioma, Clean Code, SOLID, Type Hints
-   - 🛠️ **Stack Tecnológico:** Azure, FastAPI, Databricks, PostgreSQL, React
-   - 🚀 **Status do Projeto:** O que foi feito (Sprint 1), o que vem (Sprint 2 e 3)
-   - 🔄 **Fluxo de Dados:** Arquitetura end-to-end
-   - 📦 **Gerenciamento com `uv`:** Grupos de dependências
+### 🔴 LEITURA OBRIGATÓRIA (Antes de começar)
 
-### 2. **[docs/SCRAPER_GUIDE.md](SCRAPER_GUIDE.md)** - INSTRUÇÕES DO MÓDULO DE SCRAPING
-   - 🔷 Como usar o scraper (CLI, opções, exemplos)
-   - 📊 Estrutura dos dados coletados
-   - 💡 Exemplos práticos de uso
-   - 🔧 Troubleshooting
+1. **[CONTEXT.md](CONTEXT.md)** - Regras para Agentes IA e Desenvolvedores
+   - 📋 Regras de Codificação (Idioma, Clean Code, Type Hints, SOLID)
+   - 🛠️ Stack Tecnológico (Azure, FastAPI, Databricks, PostgreSQL, React)
+   - 🔄 Fluxo de Dados e Ambiente
+   - 📦 Gerenciamento de Dependências (`uv`)
 
-### 3. **Este README.md** - Visão Geral Rápida
-   - Resumo do projeto
-   - Como começar
+### 🟡 COMPREENDER A ARQUITETURA
+
+2. **[docs/OVERVIEW.md](docs/OVERVIEW.md)** - Arquitetura e Panorama Geral
+   - 🏗️ Estrutura do projeto (Bronze → Silver → Gold)
+   - 🛠️ Ferramentas por módulo
+   - 📊 Fluxo de dados (Sprint 2)
+   - 🚀 Próximos passos (Sprint 3+)
+
+### 🟢 MÓDULOS E TESTES
+
+3. **[docs/guides/SCRAPER.md](docs/guides/SCRAPER.md)** - Guia do Módulo Scraper
+   - 🔷 Quick start e exemplos
+   - 🎛️ Opções de CLI
+   - 💡 Desenvolvimento local
+   - 🐳 Docker e ACR
+   - 🚨 Troubleshooting
+
+4. **[docs/testing/CLOUD_TESTING.md](docs/testing/CLOUD_TESTING.md)** - Teste E2E na Nuvem
+   - ☁️ Como disparar pipeline via `az` CLI
+   - 📊 Monitorar execução
+   - ✅ Validar dados em ADLS Gen2
+   - 🔧 Comandos para ACR, Storage, ADF
+
+5. **Este README.md** - Quick Start
+   - Visão geral rápida
+   - Como começar localmente
    - Estrutura de pastas
-   - Próximos passos
 
 ---
 
-## 🎯 O Que é RentMaster?
+## 📁 Estrutura de Pastas
+
+```
+Projeto Integrador III 2.0/
+│
+├── README.md                           # Este arquivo
+├── CONTEXT.md                          # Regras de codificação (Obrigatório)
+├── pyproject.toml                      # Dependências (uv)
+│
+├── docs/                               # Documentação do projeto
+│   ├── OVERVIEW.md                     # Arquitetura e ferramentas por módulo
+│   ├── ceub/                           # Documentação do cliente CEUB
+│   ├── guides/                         # Guias por módulo
+│   │   └── SCRAPER.md                  # Guia detalhado do scraper
+│   └── testing/
+│       └── CLOUD_TESTING.md            # Teste E2E com comandos `az`
+│
+├── scrapper/                           # Módulo Scraper
+│   ├── scrapper.py                     # Script principal
+│   ├── debug_scraper.py                # Versão com debug
+│   ├── Dockerfile                      # Imagem Docker para ACR
+│   └── debug_output/                   # Logs de debug
+│
+├── notebooks/                          # Jupyter Notebooks
+│   └── eda.ipynb                       # Análise Exploratória de Dados (EDA)
+│
+├── examples.py                         # Exemplos de uso
+├── main.py                             # Entry point (futuro)
+└── .env.example                        # Template de variáveis de ambiente
+```
+
+### 📚 Navegação de Documentos
+
+```
+┌─ Começar Aqui ─────────────────────────────────────┐
+│ README.md (você está aqui)                          │
+│ └─ Leia CONTEXT.md antes de codificar               │
+└────────────────────────────────────────────────────┘
+           ↓
+┌─ Entender o Projeto ───────────────────────────────┐
+│ docs/OVERVIEW.md (Arquitetura geral)               │
+│ └─ Veja ferramentas por módulo                      │
+└────────────────────────────────────────────────────┘
+           ↓
+┌─ Trabalhar em um Módulo ───────────────────────────┐
+│ docs/guides/SCRAPER.md (Guia detalhado)            │
+│ └─ Código, exemplos, troubleshooting                │
+└────────────────────────────────────────────────────┘
+           ↓
+┌─ Testar na Nuvem ──────────────────────────────────┐
+│ docs/testing/CLOUD_TESTING.md (Teste E2E)          │
+│ └─ Comandos `az` para pipeline, ACR, Storage       │
+└────────────────────────────────────────────────────┘
+```
+
+---
 
 RentMaster (Moneyball de Aluguel) é uma **plataforma inteligente** que:
 
@@ -92,11 +164,42 @@ uv sync --group api             # Apenas FastAPI
 
 ### Executar o Scraper (Sprint 2 🔄)
 
-> **Atenção:** Scraper está em desenvolvimento para Sprint 2. A seguir, exemplos de uso planejado:
+> **Atenção:** Scraper está em desenvolvimento para Sprint 2. A seguir, exemplos de uso:
 
+**Local:**
 ```bash
 # 1 página (padrão)
 uv run scrapper/scrapper.py
+
+# 3 páginas, apenas JSON
+uv run scrapper/scrapper.py --num-pages 3 --format json
+
+# Ver opções
+uv run scrapper/scrapper.py --help
+```
+
+Para mais detalhes, veja **[docs/guides/SCRAPER.md](docs/guides/SCRAPER.md)**.
+
+**Na Nuvem (Azure):**
+
+Para disparar o pipeline do Azure Data Factory e validar dados no Data Lake:
+
+```bash
+# 1. Login no Azure
+az login
+az account set --subscription "c8bb64c0-25e3-4b8e-a99e-262dcdeb7c0b"
+
+# 2. Disparar pipeline
+az datafactory pipeline create-run \
+  --resource-group rg_rent_master_dev \
+  --factory-name rentmaster-dataFactory \
+  --name RunScraperContainer
+
+# 3. Monitorar execução e validar dados em ADLS
+# (Veja docs/testing/CLOUD_TESTING.md para comando completo)
+```
+
+Siga **[docs/testing/CLOUD_TESTING.md](docs/testing/CLOUD_TESTING.md)** para teste E2E detalhado.
 
 # 3 páginas com apenas JSON
 uv run scrapper/scrapper.py --num-pages 3 --format json

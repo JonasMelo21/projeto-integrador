@@ -4,6 +4,37 @@
 
 ---
 
+## 🤖 Para Agentes de IA - LEIA PRIMEIRO
+
+**Se você é um agente IA:** Antes de QUALQUER alteração ou código, siga rigorosamente:
+
+1. ✅ **Sempre** validate against [Regras de Codificação](#regras-de-codificação-crítico---sempre-seguir)
+2. ✅ **Sempre** use Type Hints (seção 4)
+3. ✅ **Sempre** separe código (inglês) de docs (português)
+4. ✅ **Sempre** siga SOLID principles (seção 2)
+5. ✅ **Sempre** crie docstrings em Google Style (seção 8)
+6. ✅ **Sempre** teste localmente antes de fazer push
+7. ✅ **Sempre** use commits semânticos em português (seção 6)
+8. ✅ **Se** integrar com APIs externas, siga regra de erro (seção 12)
+
+**Campos Obrigatórios em Qualquer Modificação:**
+- `Type Hints` em todas as funções
+- `Docstrings` em português (Google Style)
+- `Testes` com pytest (cobertura >= 80%)
+- `Commits` semânticos: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`
+- `Branches` nomeadas: `feature/nome`, `fix/nome`, `chore/nome`
+
+**Stack Resumida:**
+- **Backend:** Python + FastAPI
+- **Data:** Azure ADLS Gen2 (Bronze/Silver/Gold)
+- **DB:** PostgreSQL
+- **ML:** XGBoost + MLflow
+- **Frontend:** React + Tailwind
+- **DevOps:** Azure (ADF, ACR, Databricks, App Service)
+- **Versionamento:** Azure Repos + Semantic Commits
+
+---
+
 ## 📌 Sobre o RentMaster
 
 **RentMaster** (Moneyball de Aluguel) é uma plataforma inteligente que:
