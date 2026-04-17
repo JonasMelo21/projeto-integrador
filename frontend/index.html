@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImóvelHub - Encontre seu imóvel perfeito</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #030213;
+            --primary-foreground: #ffffff;
+            --background: #ffffff;
+            --foreground: #030213;
+            --card: #ffffff;
+            --card-foreground: #030213;
+            --secondary: #f5f5f7;
+            --secondary-foreground: #030213;
+            --muted: #ececf0;
+            --muted-foreground: #717182;
+            --border: rgba(0, 0, 0, 0.1);
+            --success: #10b981;
+            --success-foreground: #ffffff;
+            --warning: #f59e0b;
+            --warning-foreground: #ffffff;
+            --destructive: #d4183d;
+            --destructive-foreground: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--background);
+            color: var(--foreground);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-content h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .search-section {
+            background: var(--card);
+            padding: 30px 0 20px 0;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 14px;
+            background: var(--secondary);
+        }
+
+        .search-input::placeholder {
+            color: var(--muted-foreground);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(3, 2, 19, 0.1);
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: var(--secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .filter-btn:hover {
+            background: var(--muted);
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: var(--primary-foreground);
+            border-color: var(--primary);
+        }
+
+        .properties-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .property-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .property-card:hover {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .property-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: var(--muted);
+            position: relative;
+        }
+
+        .property-tag {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .tag-fair {
+            background: var(--success);
+            color: var(--success-foreground);
+        }
+
+        .tag-opportunity {
+            background: var(--warning);
+            color: var(--warning-foreground);
+        }
+
+        .property-content {
+            padding: 16px;
+        }
+
+        .property-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .property-location {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--muted-foreground);
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .property-details {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--muted-foreground);
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .property-detail {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .property-footer {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+
+        .property-price {
+            color: var(--primary);
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .property-price-label {
+            font-size: 12px;
+            color: var(--muted-foreground);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 20px;
+            font-size: 18px;
+            color: var(--muted-foreground);
+        }
+
+        .spinner {
+            border: 3px solid var(--muted);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: var(--destructive);
+            color: var(--destructive-foreground);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted-foreground);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card);
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: var(--card);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--muted-foreground);
+        }
+
+        .close-btn:hover {
+            color: var(--foreground);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .detail-section {
+            margin-bottom: 24px;
+        }
+
+        .detail-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--foreground);
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .detail-item {
+            background: var(--secondary);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: var(--muted-foreground);
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--foreground);
+        }
+
+        @media (max-width: 768px) {
+            .properties-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 16px;
+            }
+
+            .property-image {
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <h1>🏠 ImóvelHub</h1>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="search-section">
+            <div class="search-bar">
+                <input type="text" class="search-input" id="searchInput" placeholder="Buscar por localização, bairro ou cidade...">
+            </div>
+            <div class="filters" id="filters">
+                <button class="filter-btn active" data-filter="all">Todos</button>
+            </div>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            Carregando imóveis...
+        </div>
+        <div id="empty" class="empty-state" style="display: none;">
+            <p>Nenhum imóvel encontrado</p>
+        </div>
+
+        <div id="propertiesGrid" class="properties-grid"></div>
+    </div>
+
+    <!-- Modal de Detalhes -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle"></h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // Detectar ambiente e definir API_BASE
+        // Se em produção (Docker), usar URL relativa
+        // Se em dev, usar localhost:8000
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8000/api'  // Dev local
+            : '/api';  // Docker/Produção (proxy via Nginx)
+        
+        let allProperties = [];
+
+        // Elementos do DOM
+        const grid = document.getElementById('propertiesGrid');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const empty = document.getElementById('empty');
+        const searchInput = document.getElementById('searchInput');
+        const modal = document.getElementById('detailModal');
+
+        // Carregar imóveis ao abrir a página
+        async function loadProperties() {
+            loading.style.display = 'flex';
+            error.style.display = 'none';
+            grid.innerHTML = '';
+
+            try {
+                console.log('Conectando à API:', `${API_BASE}/imoveis?limit=50`);
+                const response = await fetch(`${API_BASE}/imoveis?limit=50`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+                
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                allProperties = await response.json();
+                console.log('Imóveis carregados:', allProperties.length);
+                displayProperties(allProperties);
+                loading.style.display = 'none';
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = '❌ Erro ao carregar imóveis: ' + err.message;
+                console.error('Erro completo:', err);
+            }
+        }
+
+        function displayProperties(properties) {
+            grid.innerHTML = '';
+            
+            if (properties.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+
+            empty.style.display = 'none';
+
+            properties.forEach(prop => {
+                const card = document.createElement('div');
+                card.className = 'property-card';
+                
+                const isAffordable = prop.preco < 3000;
+                const tag = isAffordable ? 'Preço Justo' : 'Oportunidade';
+                const tagClass = isAffordable ? 'tag-fair' : 'tag-opportunity';
+
+                card.innerHTML = `
+                    <div style="position: relative;">
+                        <img src="${prop.imagem || 'https://via.placeholder.com/400x300?text=No+Image'}" alt="${prop.titulo}" class="property-image" onerror="this.src='https://via.placeholder.com/400x300?text=Imóvel'">
+                        <span class="property-tag ${tagClass}">${tag}</span>
+                    </div>
+                    <div class="property-content">
+                        <h3 class="property-title">${prop.titulo}</h3>
+                        <div class="property-location">
+                            📍 ${prop.local_bairro}, ${prop.local_cidade}
+                        </div>
+                        <div class="property-details">
+                            <div class="property-detail">🛏️ ${prop.quartos} quartos</div>
+                            <div class="property-detail">🚿 ${prop.banheiros} banheiros</div>
+                            <div class="property-detail" style="background: var(--secondary); padding: 2px 6px; border-radius: 4px; margin-left: auto;">
+                                ${prop.area_m2}m²
+                            </div>
+                        </div>
+                        <div class="property-footer">
+                            <div>
+                                <span class="property-price-label">Aluguel</span>
+                                <span class="property-price">R$ ${prop.preco.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                card.onclick = () => showDetail(prop);
+                grid.appendChild(card);
+            });
+        }
+
+        function showDetail(prop) {
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+
+            modalTitle.textContent = prop.titulo;
+            
+            const isAffordable = prop.preco < 3000;
+            const tag = isAffordable ? 'Preço Justo' : 'Oportunidade';
+
+            modalBody.innerHTML = `
+                <img src="${prop.imagem || 'https://via.placeholder.com/600x400'}" alt="${prop.titulo}" style="width: 100%; height: 300px; object-fit: cover; border-radius: 8px; margin-bottom: 20px;">
+
+                <div class="detail-section">
+                    <h3>Localização</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">Endereço</div>
+                        <div class="detail-value">${prop.local_bairro}, ${prop.local_cidade} - ${prop.local_uf}</div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Características</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Quartos</div>
+                            <div class="detail-value">${prop.quartos}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Banheiros</div>
+                            <div class="detail-value">${prop.banheiros}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Área</div>
+                            <div class="detail-value">${prop.area_m2}m²</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Vagas</div>
+                            <div class="detail-value">${prop.vagas}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Preço</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Aluguel</div>
+                            <div class="detail-value">R$ ${prop.preco.toLocaleString()}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Status</div>
+                            <div class="detail-value" style="color: ${isAffordable ? '#10b981' : '#f59e0b'}">${tag}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Descrição</h3>
+                    <p style="color: var(--muted-foreground); line-height: 1.6;">${prop.descricao || 'Sem descrição'}</p>
+                </div>
+
+                <div class="detail-section">
+                    <h3>Imobiliária</h3>
+                    <div class="detail-item">
+                        <div class="detail-label">Empresa</div>
+                        <div class="detail-value">${prop.imobiliaria_nome}</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button style="flex: 1; padding: 12px; background: var(--primary); color: var(--primary-foreground); border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        Falar com ${prop.imobiliaria_nome}
+                    </button>
+                    <button style="flex: 1; padding: 12px; background: var(--secondary); color: var(--foreground); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        Agendar Visita
+                    </button>
+                </div>
+            `;
+
+            modal.classList.add('open');
+        }
+
+        function closeModal() {
+            modal.classList.remove('open');
+        }
+
+        // Fechar modal ao clicar fora
+        modal.onclick = (e) => {
+            if (e.target === modal) closeModal();
+        }
+
+        // Busca
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allProperties.filter(prop => 
+                prop.titulo.toLowerCase().includes(term) ||
+                prop.local_bairro.toLowerCase().includes(term) ||
+                prop.local_cidade.toLowerCase().includes(term)
+            );
+            displayProperties(filtered);
+        });
+
+        // Carregar na inicialização
+        loadProperties();
+    </script>
+</body>
+</html>
