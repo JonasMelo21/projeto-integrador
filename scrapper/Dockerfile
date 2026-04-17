@@ -1,5 +1,6 @@
 # Dockerfile - RentMaster Scraper Module
-# Produção-ready para Azure Container Instances
+# ⚠️  ESTE É O ÚNICO DOCKERFILE ENVIADO PARA ACR
+# Backend e Frontend rodam com docker compose localmente
 
 FROM mcr.microsoft.com/playwright/python:v1.48.0-jammy
 # Microsoft-maintained Playwright image com todas as dependências do SO pré-instaladas

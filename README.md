@@ -1,475 +1,117 @@
 # RentMaster - Moneyball de Aluguel 🏠📊
 
-Uma plataforma inteligente e orientada a dados que extrai imóveis para aluguel em tempo real, aplica Machine Learning para avaliar preços (Caro/Justo/Barato), e fornece um assistente virtual para análises com linguagem natural.
+Plataforma inteligente que extrai imóveis para aluguel em tempo real, analisa preços com ML e fornece assistente virtual.
 
-**Status:** 
-
-- Sprint 1 - Concluído ✅
-- Sprint 2 - Scraper Funcional + Docker + ADLS Gen2 (✅ Feature 2.1 Validada)
-- Sprint 3+ - Pendente ⏳
+**240 imóveis** | **21 imobiliárias** | **39 localidades**
 
 ---
 
-## 📚 Documentação Estruturada
+## 🎯 O Projeto
 
-Este projeto segue **regras rigorosas de codificação e arquitetura**. Comece por aqui:
-
-### 🔴 LEITURA OBRIGATÓRIA (Antes de começar)
-
-1. **[CONTEXT.md](CONTEXT.md)** - Regras para Agentes IA e Desenvolvedores
-   - 📋 Regras de Codificação (Idioma, Clean Code, Type Hints, SOLID)
-   - 🛠️ Stack Tecnológico (Azure, FastAPI, Databricks, PostgreSQL, React)
-   - 🔄 Fluxo de Dados e Ambiente
-   - 📦 Gerenciamento de Dependências (`uv`)
-
-### 🟡 COMPREENDER A ARQUITETURA
-
-2. **[docs/OVERVIEW.md](docs/OVERVIEW.md)** - Arquitetura e Panorama Geral
-   - 🏗️ Estrutura do projeto (Bronze → Silver → Gold)
-   - 🛠️ Ferramentas por módulo
-   - 📊 Fluxo de dados (Sprint 2)
-   - 🚀 Próximos passos (Sprint 3+)
-
-### 🟢 MÓDULOS E TESTES
-
-3. **[docs/guides/SCRAPER.md](docs/guides/SCRAPER.md)** - Guia do Módulo Scraper
-   - 🔷 Quick start e exemplos
-   - 🎛️ Opções de CLI
-   - 💡 Desenvolvimento local
-   - 🐳 Docker e ACR
-   - 🚨 Troubleshooting
-
-4. **[docs/testing/CLOUD_TESTING.md](docs/testing/CLOUD_TESTING.md)** - Teste E2E na Nuvem
-   - ☁️ Como disparar pipeline via `az` CLI
-   - 📊 Monitorar execução
-   - ✅ Validar dados em ADLS Gen2
-   - 🔧 Comandos para ACR, Storage, ADF
-
-5. **Este README.md** - Quick Start
-   - Visão geral rápida
-   - Como começar localmente
-   - Estrutura de pastas
-
----
-
-## 📁 Estrutura de Pastas
-
-```
-Projeto Integrador III 2.0/
-│
-├── README.md                           # Este arquivo
-├── CONTEXT.md                          # Regras de codificação (Obrigatório)
-├── pyproject.toml                      # Dependências (uv)
-│
-├── docs/                               # Documentação do projeto
-│   ├── OVERVIEW.md                     # Arquitetura e ferramentas por módulo
-│   ├── ceub/                           # Documentação do cliente CEUB
-│   ├── guides/                         # Guias por módulo
-│   │   └── SCRAPER.md                  # Guia detalhado do scraper
-│   └── testing/
-│       └── CLOUD_TESTING.md            # Teste E2E com comandos `az`
-│
-├── scrapper/                           # Módulo Scraper
-│   ├── scrapper.py                     # Script principal
-│   ├── debug_scraper.py                # Versão com debug
-│   ├── Dockerfile                      # Imagem Docker para ACR
-│   └── debug_output/                   # Logs de debug
-│
-├── notebooks/                          # Jupyter Notebooks
-│   └── eda.ipynb                       # Análise Exploratória de Dados (EDA)
-│
-├── examples.py                         # Exemplos de uso
-├── main.py                             # Entry point (futuro)
-└── .env.example                        # Template de variáveis de ambiente
-```
-
-### 📚 Navegação de Documentos
-
-```
-┌─ Começar Aqui ─────────────────────────────────────┐
-│ README.md (você está aqui)                          │
-│ └─ Leia CONTEXT.md antes de codificar               │
-└────────────────────────────────────────────────────┘
-           ↓
-┌─ Entender o Projeto ───────────────────────────────┐
-│ docs/OVERVIEW.md (Arquitetura geral)               │
-│ └─ Veja ferramentas por módulo                      │
-└────────────────────────────────────────────────────┘
-           ↓
-┌─ Trabalhar em um Módulo ───────────────────────────┐
-│ docs/guides/SCRAPER.md (Guia detalhado)            │
-│ └─ Código, exemplos, troubleshooting                │
-└────────────────────────────────────────────────────┘
-           ↓
-┌─ Testar na Nuvem ──────────────────────────────────┐
-│ docs/testing/CLOUD_TESTING.md (Teste E2E)          │
-│ └─ Comandos `az` para pipeline, ACR, Storage       │
-└────────────────────────────────────────────────────┘
-```
-
----
-
-RentMaster (Moneyball de Aluguel) é uma **plataforma inteligente** que:
-
-1. **Extrai Dados em Tempo Real** (Sprint 2)
-   - Web scraping de portais de imóveis (DFimoveis, etc.)
-   - Identificação única de cada imóvel (ID SHA-256)
-   - Suporte a paginação sem duplicatas
-
-2. **Processa em Pipeline Medalhão** (Sprint 2)
-   - 🥉 **Bronze:** Dados brutos no ADLS Gen2
-   - 🥈 **Silver:** Dados limpos e validados (Databricks/PySpark)
-   - 🥇 **Gold:** Dados curados para BI e consumo
-
-3. **Prediz e Classifica Preços** (Sprint 3)
-   - ML Model (XGBoost/Scikit-Learn) → "Caro", "Justo" ou "Barato"
-   - Deployed em Azure Machine Learning
-   - Real-time inference via FastAPI
-
-4. **Fornece Assistente Virtual** (Sprint 3)
-   - Chatbot Text-to-SQL (Vanna.ai/LangChain)
-   - Consultas em linguagem natural
-   - Integrado com PostgreSQL
-
-5. **Dashboard Interativo** (Sprint 3)
-   - Frontend React + Tailwind CSS
-   - Hospedado no Azure Static Web Apps
-   - Filtros, mapas, análises em tempo real
+1. **Scraper** - Web scraping automático de portais imobiliários
+2. **ADLS** - Armazenamento em Azure Data Lake Storage
+3. **FastAPI** - Backend com 240 imóveis em SQLite
+4. **Frontend** - Interface HTML pura com busca e filtros
+5. **Docker** - Containerização para local e cloud
 
 ---
 
 ## 🚀 Como Começar
 
-### Pré-requisitos
-- Python 3.13+
-- `uv` (gerenciador de pacotes) - [Instale aqui](https://astral.sh/uv/)
-- Git
+### Local (sem Docker)
+```bash
+# Backend
+cd backend && python -m venv .venv_clean && source .venv_clean/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload
 
-### Instalação Rápida
+# Frontend (outro terminal)
+cd frontend && python -m http.server 5173
+```
+
+Acesse: http://localhost:5173
+
+### Com Docker
+```bash
+docker compose build
+docker compose up
+```
+
+Acesse: http://localhost:5173
+
+---
+
+## 📖 Documentação
+
+- **[docs/SETUP.md](docs/SETUP.md)** - Como rodar (local e Docker)
+- **[CONTEXT.md](CONTEXT.md)** - Regras de codificação
+- **[docs/guides/SCRAPER.md](docs/guides/SCRAPER.md)** - Detalhes do scraper
+
+---
+
+## 🏗️ Tech Stack
+
+- **Backend**: FastAPI + Uvicorn + SQLAlchemy
+- **Frontend**: HTML5 puro (sem build tools)
+- **Database**: SQLite (local)
+- **Data**: ADLS Gen2 (Azure)
+- **Docker**: Multi-service composition
+
+---
+
+## 📊 API Endpoints
+
+```
+GET  /api/imoveis?limit=50              # Lista imóveis
+GET  /api/imoveis/{id}                  # Detalhes
+GET  /api/imoveis/stats                 # Estatísticas
+GET  /api/dimensoes/imobiliarias        # Empresas
+GET  /api/dimensoes/locais              # Localidades
+```
+
+---
+
+## 🐳 Docker
 
 ```bash
-# Clone o repositório
-git clone https://RentMaster@dev.azure.com/RentMaster/Projeto%20Integrador%20III%202.0/_git/Projeto%20Integrador%20III%202.0
-
-cd "Projeto Integrador III 2.0"
-
-# Sincronize dependências
-uv sync
-
-# (Opcional) Sincronize apenas grupos específicos
-uv sync --group scraping        # Apenas web scraping
-uv sync --group notebook        # Apenas Jupyter + análise
-uv sync --group api             # Apenas FastAPI
-```
-
-### Executar o Scraper (Sprint 2 🔄)
-
-> **Atenção:** Scraper está em desenvolvimento para Sprint 2. A seguir, exemplos de uso:
-
-**Local:**
-```bash
-# 1 página (padrão)
-uv run scrapper/scrapper.py
-
-# 3 páginas, apenas JSON
-uv run scrapper/scrapper.py --num-pages 3 --format json
-
-# Ver opções
-uv run scrapper/scrapper.py --help
-```
-
-Para mais detalhes, veja **[docs/guides/SCRAPER.md](docs/guides/SCRAPER.md)**.
-
-**Na Nuvem (Azure):**
-
-Para disparar o pipeline do Azure Data Factory e validar dados no Data Lake:
-
-```bash
-# 1. Login no Azure
-az login
-az account set --subscription "c8bb64c0-25e3-4b8e-a99e-262dcdeb7c0b"
-
-# 2. Disparar pipeline
-az datafactory pipeline create-run \
-  --resource-group rg_rent_master_dev \
-  --factory-name rentmaster-dataFactory \
-  --name RunScraperContainer
-
-# 3. Monitorar execução e validar dados em ADLS
-# (Veja docs/testing/CLOUD_TESTING.md para comando completo)
-```
-
-Siga **[docs/testing/CLOUD_TESTING.md](docs/testing/CLOUD_TESTING.md)** para teste E2E detalhado.
-
-# 3 páginas com apenas JSON
-uv run scrapper/scrapper.py --num-pages 3 --format json
-
-# Com timeout maior e URL customizada
-uv run scrapper/scrapper.py "https://dfimoveis.com.br/aluguel/df/lago-sul/imoveis" --num-pages 2 --timeout-ms 60000
-```
-
-**Saída (esperada):** Dados em `data/imoveis.csv` e `data/imoveis.json`
-
-→ Detalhes: [docs/SCRAPER_GUIDE.md](docs/SCRAPER_GUIDE.md)
-
-### Explorar Dados com Jupyter (Sprint 2 🔄)
-
-> **Atenção:** Jupyter com dados será disponível em Sprint 2 após implementação do scraper.
-
-```bash
-# Inicia servidor Jupyter
-uv run jupyter notebook
-
-# Abre notebooks/eda.ipynb
-# Kernel: "Projeto Integrador III 2.0" (já registrado)
+docker compose build  # Build
+docker compose up     # Rodar
+docker compose logs -f backend  # Logs
+docker compose down   # Parar
 ```
 
 ---
 
-## 📁 Estrutura do Projeto
+## 🔧 Variáveis de Ambiente
 
+### backend/scripts/.env.adls
 ```
-Projeto Integrador III 2.0/
-│
-├─ 📖 CONTEXT.md                      ← GUIA DE CODIFICAÇÃO (LEIA PRIMEIRO!)
-├─ 📖 README.md                       ← Este arquivo
-├─ 📦 pyproject.toml                  ← Config `uv` com grupos de deps
-│
-├─ � docs/  (Sprint 1 ✅)
-│  ├─ CONTEXT.md                      │  Guia técnico e arquitetura
-│  ├─ README.md                       │  Visão geral
-│  ├─ SCRAPER_GUIDE.md               │  Manual do scraper
-│  ├─ er_diagram.mmd                 │  Modelo de Dados
-│  ├─ eap_diagram.mmd                │  Estrutura Analítica
-│  ├─ backlog_sprint.csv
-│  └─ [PDFs de requisitos, aulas]
-│
-├─ 🔷 scrapper/  (Sprint 2 🔄)
-│  └─ scrapper.py                     │  Web scraper com paginação & dedup
-│
-├─ 📊 notebooks/  (Sprint 2 🔄)
-│  └─ eda.ipynb                       │  Exploração de dados
-│
-├─ 🚀 backend/  (Sprint 2 🔄)
-│  ├─ app/
-│  │  ├─ main.py
-│  │  ├─ routers/
-│  │  ├─ services/
-│  │  ├─ models/
-│  │  └─ schemas/
-│  └─ tests/
-│
-├─ 🎨 frontend/  (Sprint 2 🔄)
-│  ├─ src/
-│  │  ├─ components/
-│  │  ├─ pages/
-│  │  └─ styles/
-│  └─ package.json
-│
-└─ 🤖 ml/  (Sprint 3+ ⏳)
-    ├─ models/
-    ├─ preprocessing/
-    └─ evaluation/
+AZURE_STORAGE_ACCOUNT=rentmasterstorageaccount
+AZURE_STORAGE_KEY=<sua_chave>
+ADLS_CONTAINER=bronze
+ADLS_PATH=raw/
 ```
 
 ---
 
-## 📊 Status do Projeto
+## 📁 Estrutura
 
-### ✅ Sprint 1: Fundações e Concepção (CONCLUÍDO)
-
-**Epic 1 - Concepção Visual e Técnica:**
-- ✅ Modelo de Dados (ER Diagram)
-- ✅ Estrutura Analítica (EAP)
-- ✅ Protótipos em Figma (Listagem, Detalhe, Favoritos, Chat)
-- ✅ Histórias de Usuário com Critérios de Aceitação
-- ✅ Taskboard estruturado (Azure Boards)
-- ✅ Documentação técnica (CONTEXT.md, README.md, SCRAPER_GUIDE.md)
-
-### ✅ Sprint 2: Descoberta e Exploração de Imóveis (FEATURE 2.1 CONCLUÍDA)
-
-**Epic 2.1 - Scraper + Docker + ADLS Gen2 Pipeline (CONCLUÍDO ✅)**
-
-- ✅ **Scraper Funcional**
-  - ✅ Extrai 30+ imóveis por página
-  - ✅ Paginação com deduplicação automática
-  - ✅ **Área correta**: procura por "m²" em múltiplos elementos
-  - ✅ **Múltiplas imagens**: array de URLs (filtra base64)
-  - ✅ ID hexadecimal único (SHA-256, 12 chars)
-  - ✅ Exporta em CSV + JSON
-  - ✅ Docker containerizado com SDKs Azure
-
-- ✅ **Upload para ADLS Gen2**
-  - ✅ Parâmetro `--upload-to-adls` funcional
-  - ✅ Autenticação via `DefaultAzureCredential()` com Managed Identity
-  - ✅ JSON persistido em `bronze/raw/` com timestamp
-  - ✅ Validação de blob após upload (sem arquivos vazios)
-
-- ✅ **Pipeline End-to-End no Azure Data Factory**
-  - ✅ Web Activity dispara container ACI via REST API
-  - ✅ Container executa com exitCode 0
-  - ✅ Arquivo novo em `bronze/raw/` a cada execução
-  - ✅ Pipeline marca "Succeeded" automaticamente
-  - ✅ **Validado em: 2026-04-14 22:38 UTC**
-
-- ✅ **Dados Coletados**
-  - 30+ imóveis únicos por execução
-  - Estrutura JSON completa com 13 campos
-  - Deduplicação funcional em múltiplas páginas
-
-**Próximas Features (Sprint 2):**
-- [ ] Jupyter Notebook + EDA
-- [ ] FastAPI backend (rotas iniciais)
-- [ ] Frontend React (cards e integração)
-- [ ] Feature 2.2 - Busca e Filtros Dinâmicos
-
-**Commit de Referência:** `2ad201e` (Merged PR 3 - Feature 2.1 Completa)
-
-### 🎨 Sprint 3+: Inteligência e Jornada
-
-**Epic 3 - Diagnóstico de Preço (O 'Moneyball'):**
-- [ ] Feature 3.1 - Termômetro de Oportunidade
-  - Dataset preparado e feature engineering
-  - Modelo XGBoost (Caro/Justo/Barato)
-  - Deploy em Azure Machine Learning
-  - Tags visuais no frontend
-
-**Epic 4 - Assistente Virtual Especialista (Chat):**
-- [ ] Feature 4.1 - Motor de IA
-  - Treinamento Vanna.ai (Text-to-SQL)
-  - Rota `/api/chat` no backend
-  - Chat UI (modal flutuante)
-
-**Epic 5 - Jornada Personalizada e Confiabilidade:**
-- [ ] Feature 5.1 - Gestão de Favoritos
-  - Persistência de curtidas (BD)
-  - Página "Meus Favoritos"
-  
-- [ ] Feature 5.2 - Disponibilidade Pública
-  - Deploy em Azure (ADLS, PostgreSQL, App Service, Static Web Apps)
-  - CI/CD com Azure Pipelines
-
----
-
-## 🏗️ Arquitetura Visual
-
-![Diagrama de Arquitetura RentMaster](docs/diagrama_arq_rent_master.png)
-
-**Componentes principais:**
-- 🔷 **Ingestão & Orquestração:** Azure Data Factory + Scraper Python
-- 💾 **Data Lake:** ADLS Gen2 com padrão Medalhão (Bronze/Silver/Gold)
-- 🔄 **Transformação:** Databricks Workspace com PySpark
-- 🗄️ **Database:** Azure Database for PostgreSQL
-- 🚀 **Backend:** Azure App Service (FastAPI)
-- 🎨 **Frontend:** Azure Static Web Apps (React)
-- 🤖 **IA:** Vanna.ai + LangChain para chatbot Text-to-SQL
-
----
-
-## 🛠️ Stack Tecnológico (Azure-First)
-
-| Camada | Tecnologias | Status |
-|--------|-------------|--------|
-| **Arquitetura & Design** | ER Diagram, EAP, Protótipos Figma, Histórias | ✅ Sprint 1 |
-| **Scraping** | Python, Playwright, BeautifulSoup | 🔄 Sprint 2 |
-| **Análise** | Jupyter, Pandas, Matplotlib, Seaborn | 🔄 Sprint 2 |
-| **Backend** | FastAPI, Uvicorn, Pydantic | 🔄 Sprint 2 |
-| **Frontend** | React, Tailwind CSS | 🔄 Sprint 2 |
-| **Data Lake** | ADLS Gen2 (Bronze/Silver/Gold) | 🔄 Sprint 2 |
-| **ETL** | Azure Databricks, PySpark | 🔄 Sprint 2 |
-| **Database** | PostgreSQL (Azure Database) | 🔄 Sprint 2 |
-| **ML** | Scikit-Learn, XGBoost, MLflow | ⏳ Sprint 3 |
-| **IA** | Vanna.ai, LangChain | ⏳ Sprint 3 |
-| **DevOps** | Azure Repos, Pipelines, ACR, Static Apps | ⏳ Sprint 3 |
-
----
-
-## 📦 Gerenciamento de Dependências com uv
-
-Os grupos estão organizados por funcionalidade:
-
-```bash
-# Instalar ALL
-uv sync
-
-# Instalar grupos específicos
-uv sync --group scraping        # Playwright, BeautifulSoup
-uv sync --group notebook        # Jupyter, Pandas, Matplotlib
-uv sync --group api             # FastAPI, Uvicorn
-uv sync --group data            # PySpark, Pandas
-uv sync --group ml              # Scikit-Learn, XGBoost, MLflow
-uv sync --group test            # Pytest
-uv sync --group dev             # Ruff, Black, Mypy
-
-# Rodar comandos com uv
-uv run python script.py
-uv run pytest
-uv run jupyter notebook
+```
+backend/           → FastAPI app
+frontend/          → Interface HTML
+scrapper/          → Web scraper
+docs/              → Documentação
+docker-compose.yml → Orquestração
 ```
 
-Detalhes: Veja `pyproject.toml` ou [CONTEXT.md](CONTEXT.md#-gerenciamento-de-dependências-com-uv)
+---
+
+## 🚀 Próximos Passos
+
+1. **Leia**: [docs/SETUP.md](docs/SETUP.md) para começar
+2. **Code**: Veja [CONTEXT.md](CONTEXT.md) para regras
+3. **Test**: Use os comandos em [docs/SETUP.md](docs/SETUP.md)
 
 ---
 
-## ✍️ Padrões de Codificação
-
-Este projeto segue regras rígidas. **NUNCA desvie delas:**
-
-✅ **Sempre:**
-- Código em **Inglês** (variáveis, funções, classes)
-- Documentação em **Português** (docstrings, comments)
-- Type hints em todas as funções
-- Docstrings no formato Google
-- Git commits semânticos (`feat:`, `fix:`, `docs:`)
-
-❌ **Nunca:**
-- Variáveis com nomes genéricos (`x`, `temp`, `data`)
-- Funções maiores que 20 linhas
-- Sem type hints
-- Commits sem semântica ("WIP", "updated")
-
-📖 **Leia:** [CONTEXT.md - Regras de Codificação](CONTEXT.md#-regras-de-codificação-crítico---sempre-seguir)
-
----
-
-## 🤝 Como Contribuir
-
-1. Crie uma branch: `git checkout -b feature/minha-feature`
-2. Siga as regras em [CONTEXT.md](CONTEXT.md)
-3. Commit semântico: `git commit -m "feat: adiciona nova funcionalidade"`
-4. Push e crie Pull Request
-
----
-
-## 🐛 Troubleshooting
-
-| Problema | Solução |
-|----------|---------|
-| `ModuleNotFoundError: No module named 'playwright'` | Execute `uv sync --group scraping` |
-| Scraper não encontra imóveis | Aumentar timeout: `--timeout-ms 90000` |
-| Jupyter kernel não aparece | Reexecute: `uv run python -m ipykernel install --user --name "projeto-integrador"` |
-| Dependências conflitando | Delete `.venv/` e execute `uv sync` novamente |
-
----
-
-## 📞 Referências Rápidas
-
-- **Regras & Arquitetura:** [CONTEXT.md](CONTEXT.md)
-- **Como usar Scraper:** [docs/SCRAPER_GUIDE.md](docs/SCRAPER_GUIDE.md)
-- **Dados coletados:** `data/imoveis.csv` ou `data/imoveis.json`
-- **Análise exploratória:** `notebooks/eda.ipynb`
-
----
-
-## 📄 Licença
-
-Este projeto é fornecido para fins educacionais na disciplina "Projeto Integrador III" (2026/1).
-
----
-
-**Última atualização:** 2026-04-07  
-**Versão:** 1.1.0 (Sprint 1 ✅ + Sprint 2 🔄)
-
----
-
-💡 **Dica para Agentes IA:** Se foi direcionado para este arquivo, leia primeiro [CONTEXT.md](CONTEXT.md)!
+**Desenvolvido por**: Projeto Integrador III - CEUB

@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rentmaster-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./rental.db
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/data
+    networks:
+      - rentmaster-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - frontend
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rentmaster-frontend
+    ports:
+      - "5173:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/rentmaster.conf
+    networks:
+      - rentmaster-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  scrapper:
+    build:
+      context: ./scrapper
+      dockerfile: Dockerfile
+    container_name: rentmaster-scrapper
+    environment:
+      - PYTHONUNBUFFERED=1
+      - NUM_PAGES=2
+      - FORMAT=json
+      - TIMEOUT_MS=45000
+    volumes:
+      - ./scrapper:/app
+      - scrapper_data:/app/data
+    networks:
+      - rentmaster-network
+    restart: "no"
+    profiles:
+      - scraper
+    healthcheck:
+      test: ["CMD", "python", "-c", "print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 2
+      start_period: 10s
+
+volumes:
+  backend_data:
+    driver: local
+  scrapper_data:
+    driver: local
+
+networks:
+  rentmaster-network:
+    driver: bridge

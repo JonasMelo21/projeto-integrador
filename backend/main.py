@@ -1,0 +1,87 @@
+"""FastAPI Application"""
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+import os
+import sys
+from pathlib import Path
+
+# Load environment variables
+load_dotenv()
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Import database setup
+from database import init_db, SessionLocal
+
+# Import routes
+from routes import imoveis, dimensoes
+
+# Initialize database and load data if empty
+def startup_db():
+    """Initialize database and load ADLS data if empty"""
+    init_db()
+    
+    # Check if database is empty
+    from models import FactImovel
+    db = SessionLocal()
+    try:
+        count = db.query(FactImovel).count()
+        if count == 0:
+            print("📥 Database is empty, attempting to load from ADLS...")
+            try:
+                import subprocess
+                result = subprocess.run(
+                    ["python", "scripts/load_from_adls.py"],
+                    capture_output=True,
+                    text=True,
+                    timeout=300
+                )
+                if result.returncode == 0:
+                    print("✅ ADLS data loaded successfully")
+                else:
+                    print(f"⚠️ ADLS load failed: {result.stderr}")
+            except Exception as e:
+                print(f"⚠️ Could not load ADLS data: {e}")
+                print("💡 Run manually: python scripts/load_from_adls.py")
+        else:
+            print(f"✅ Database ready with {count} imóveis")
+    finally:
+        db.close()
+
+# Initialize database at startup
+startup_db()
+
+# Create FastAPI app
+app = FastAPI(
+    title="RentMaster Backend",
+    description="Local dev API for rental properties",
+    version="0.1.0"
+)
+
+# CORS configuration - MUST be added BEFORE routes
+cors_options = {
+    "allow_origins": ["*"],
+    "allow_credentials": True,
+    "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "allow_headers": ["*"],
+}
+
+app.add_middleware(CORSMiddleware, **cors_options)
+
+# Include routers
+app.include_router(imoveis.router, prefix="/api", tags=["imoveis"])
+app.include_router(dimensoes.router, prefix="/api", tags=["dimensoes"])
+
+
+@app.get("/")
+async def root():
+    """Health check endpoint"""
+    return {"message": "RentMaster Backend running", "version": "0.1.0"}
+
+
+@app.get("/health")
+async def health():
+    """Health check"""
+    return {"status": "ok"}
