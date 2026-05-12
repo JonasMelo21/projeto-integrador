@@ -31,9 +31,6 @@ services:
     container_name: rentmaster-frontend
     ports:
       - "5173:80"
-    volumes:
-      - ./frontend:/usr/share/nginx/html
-      - ./frontend/nginx.conf:/etc/nginx/conf.d/rentmaster.conf
     networks:
       - rentmaster-network
     restart: unless-stopped

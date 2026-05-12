@@ -5,19 +5,12 @@ import { api, Property } from "../services/api";
 
 export function HomePage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState("Todos");
+  const [areaMin, setAreaMin] = useState(0);
+  const [areaMax, setAreaMax] = useState(200);
+  const [priceMax, setPriceMax] = useState(10000);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const filters = [
-    "Todos",
-    "Apartamento",
-    "Casa",
-    "Studio",
-    "Preço Justo",
-    "Oportunidade",
-  ];
 
   useEffect(() => {
     const loadProperties = async () => {
@@ -54,6 +47,17 @@ export function HomePage() {
     amenities: [],
   }));
 
+  // Aplicar filtros
+  const filteredProperties = displayProperties.filter((property) => {
+    // Filtro de área
+    if (property.area < areaMin || property.area > areaMax) return false;
+
+    // Filtro de preço
+    if (property.price > priceMax) return false;
+
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
@@ -74,20 +78,47 @@ export function HomePage() {
             </button>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {filters.map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setSelectedFilter(filter)}
-                className={`px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-                  selectedFilter === filter
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
+          <div className="flex gap-4 items-center flex-wrap">
+              <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-sm min-w-[240px]">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-muted-foreground">Área (m²)</span>
+                  <span className="text-sm font-medium">{areaMin}m² - {areaMax}m²</span>
+                </div>
+                <div className="flex gap-3 items-center">
+                  <input
+                    type="range"
+                    min="0"
+                    max="200"
+                    value={areaMin}
+                    onChange={(e) => setAreaMin(Number(e.target.value))}
+                    className="flex-1 accent-primary"
+                  />
+                  <input
+                    type="range"
+                    min="0"
+                    max="200"
+                    value={areaMax}
+                    onChange={(e) => setAreaMax(Number(e.target.value))}
+                    className="flex-1 accent-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-sm min-w-[220px]">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-muted-foreground">Preço até</span>
+                  <span className="text-sm font-medium">R$ {priceMax.toLocaleString('pt-BR')}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="10000"
+                  step="100"
+                  value={priceMax}
+                  onChange={(e) => setPriceMax(Number(e.target.value))}
+                  className="w-full accent-primary"
+                />
+              </div>
           </div>
         </div>
 
@@ -101,7 +132,7 @@ export function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {displayProperties.map((property) => (
+            {filteredProperties.map((property) => (
               <PropertyCard key={property.id} property={property} />
             ))}
           </div>

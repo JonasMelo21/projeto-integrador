@@ -1,10 +1,25 @@
 import { Heart, Bed, Bath, MapPin } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Property } from "../data/mockData";
+
+interface DisplayProperty {
+  id: string;
+  title: string;
+  location: string;
+  price: number;
+  bedrooms: number;
+  bathrooms: number;
+  area: number;
+  image: string;
+  mlTag: "Preço Justo" | "Oportunidade";
+  images: string[];
+  description: string;
+  priceComparison: number;
+  amenities: string[];
+}
 
 interface PropertyCardProps {
-  property: Property;
+  property: DisplayProperty;
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
