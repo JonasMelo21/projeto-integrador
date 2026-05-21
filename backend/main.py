@@ -30,21 +30,34 @@ def startup_db():
         count = db.query(FactImovel).count()
         if count == 0:
             print("📥 Database is empty, attempting to load from ADLS...")
+            print("⏳ This may take a few minutes...")
             try:
                 import subprocess
-                result = subprocess.run(
-                    ["python", "scripts/load_from_adls.py"],
-                    capture_output=True,
-                    text=True,
-                    timeout=300
-                )
-                if result.returncode == 0:
-                    print("✅ ADLS data loaded successfully")
-                else:
-                    print(f"⚠️ ADLS load failed: {result.stderr}")
+                import tempfile
+                
+                # Create temporary directory for downloads
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    # Use the new Azure CLI script
+                    result = subprocess.run(
+                        ["bash", "scripts/load_from_adls_cli.sh"],
+                        capture_output=True,
+                        text=True,
+                        timeout=600,  # 10 minutes timeout
+                        env={**os.environ, "TEMP_DIR": temp_dir}
+                    )
+                    
+                    if result.returncode == 0:
+                        print("✅ ADLS data loaded successfully")
+                        # Refresh count
+                        db.close()
+                        db = SessionLocal()
+                        count = db.query(FactImovel).count()
+                        print(f"✅ Database now has {count} imóveis")
+                    else:
+                        print(f"⚠️ ADLS load failed: {result.stderr}")
             except Exception as e:
                 print(f"⚠️ Could not load ADLS data: {e}")
-                print("💡 Run manually: python scripts/load_from_adls.py")
+                print("💡 Run manually: bash scripts/load_from_adls_cli.sh")
         else:
             print(f"✅ Database ready with {count} imóveis")
     finally:

@@ -17,7 +17,7 @@ export function HomePage() {
       try {
         setLoading(true);
         setError(null);
-        const data = await api.getProperties(50);
+        const data = await api.getProperties(10000);
         setProperties(data);
       } catch (err) {
         setError("Falha ao carregar imóveis");

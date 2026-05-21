@@ -13,7 +13,7 @@ router = APIRouter()
 @router.get("/imoveis", response_model=List[FactImovelListSchema])
 async def list_imoveis(
     skip: int = 0,
-    limit: int = 50,
+    limit: int = 10000,
     db: Session = Depends(get_db)
 ):
     """List all properties with pagination"""
