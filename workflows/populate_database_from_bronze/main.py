@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
 """
 RentMaster Bronze to Database Pipeline
-Populates SQLite database from Azure Blob Storage (bronze/raw/)
+Populates Azure SQL Serverless database from Azure Blob Storage (bronze/raw/)
 Sends email notification on success/failure
 """
 
 import json
 import logging
 import os
-import sqlite3
 import smtplib
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
+from sqlalchemy import create_engine, Column, String, Float, Integer, DateTime
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from sqlalchemy.exc import SQLAlchemyError
 
 
 # ============================================================================
@@ -29,8 +30,11 @@ STORAGE_ACCOUNT_NAME = os.getenv("STORAGE_ACCOUNT_NAME", "rentmasterstorageaccou
 CONTAINER_NAME = os.getenv("CONTAINER_NAME", "bronze")
 BLOB_PREFIX = os.getenv("BLOB_PREFIX", "raw/")
 
-# Database
-DB_PATH = os.getenv("DB_PATH", "./rental.db")
+# Database - SQL Server connection string
+DB_CONNECTION_STRING = os.getenv(
+    "DB_CONNECTION_STRING",
+    "mssql+pyodbc://user:password@server.database.windows.net:1433/rentmaster_db?driver=ODBC+Driver+17+for+SQL+Server"
+)
 
 # Email
 EMAIL_FROM = os.getenv("EMAIL_FROM", "python_pipeline@gmail.com")
@@ -66,6 +70,60 @@ def setup_logging(level: str = "INFO") -> logging.Logger:
 
 
 logger = setup_logging(LOG_LEVEL)
+
+
+# ============================================================================
+# SQLALCHEMY DATABASE SETUP
+# ============================================================================
+
+Base = declarative_base()
+
+
+class FactImovel(Base):
+    """Imovel/Property Fact Table"""
+    __tablename__ = "FactImovel"
+
+    id = Column(Integer, primary_key=True)
+    id_hex = Column(String(64), unique=True, nullable=False, index=True)  # SHA256 hash of URL
+    url = Column(String(500), nullable=False)
+    titulo = Column(String(255), nullable=True)
+    preco = Column(Float, nullable=True)
+    area_m2 = Column(Float, nullable=True)
+    quartos = Column(Integer, nullable=True)
+    banheiros = Column(Integer, nullable=True)
+    vagas = Column(Integer, nullable=True)
+    endereco = Column(String(500), nullable=True)
+    id_imobiliaria = Column(Integer, nullable=True)
+    id_local = Column(Integer, nullable=True)
+    data_extracao = Column(DateTime, nullable=False)
+
+
+def get_db_engine():
+    """Create SQLAlchemy engine for SQL Server"""
+    try:
+        engine = create_engine(
+            DB_CONNECTION_STRING,
+            pool_size=5,
+            max_overflow=10,
+            pool_pre_ping=True,
+            echo=False,
+        )
+        logger.info(f"✅ Connected to database: {DB_CONNECTION_STRING[:50]}...")
+        return engine
+    except Exception as e:
+        logger.error(f"❌ Failed to create database engine: {e}")
+        raise
+
+
+def ensure_database_ready(engine) -> bool:
+    """Ensure database schema exists"""
+    try:
+        Base.metadata.create_all(engine)
+        logger.info("✅ Database schema verified/created")
+        return True
+    except SQLAlchemyError as e:
+        logger.error(f"❌ Failed to create schema: {e}")
+        return False
 
 
 # ============================================================================
@@ -169,121 +227,59 @@ def parse_area(area_str: str) -> Optional[float]:
         return None
 
 
-# ============================================================================
-# DATABASE
-# ============================================================================
-
-def create_connection(db_path: str) -> Optional[sqlite3.Connection]:
-    """Create SQLite database connection"""
-    try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        logger.info(f"✅ Connected to database: {db_path}")
-        return conn
-    except sqlite3.Error as e:
-        logger.error(f"❌ Database connection error: {e}")
-        return None
-
-
-def ensure_table_exists(conn: sqlite3.Connection) -> bool:
-    """Create imoveis table if not exists"""
-    try:
-        cursor = conn.cursor()
-        
-        # Check if table exists
-        cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='imoveis'"
-        )
-        if cursor.fetchone():
-            logger.info("✅ Table 'imoveis' already exists")
-            return True
-        
-        # Create table
-        sql = """
-        CREATE TABLE imoveis (
-            id_hex TEXT PRIMARY KEY,
-            titulo TEXT NOT NULL,
-            url TEXT,
-            preco REAL,
-            descricao TEXT,
-            quartos INTEGER,
-            suites INTEGER,
-            vagas INTEGER,
-            area_m2 REAL,
-            imobiliaria TEXT,
-            data_extracao TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """
-        cursor.execute(sql)
-        conn.commit()
-        logger.info("✅ Table 'imoveis' created")
-        return True
-    
-    except sqlite3.Error as e:
-        logger.error(f"❌ Failed to create table: {e}")
-        return False
-
-
-def transform_imovel(raw: Dict) -> Optional[Dict]:
-    """Transform and validate raw property data"""
+def transform_imovel(raw: Dict, db_session: Session) -> Optional[FactImovel]:
+    """Transform and validate raw property data into ORM object"""
     try:
         # Required fields
         if not raw.get("id_hex") or not raw.get("titulo"):
             logger.warning(f"⚠️  Missing required fields in: {raw.get('id_hex', 'unknown')}")
             return None
         
-        return {
-            "id_hex": raw["id_hex"],
-            "titulo": raw["titulo"],
-            "url": raw.get("url", ""),
-            "preco": parse_preco(raw.get("preco", "")),
-            "descricao": raw.get("descricao", "")[:500],  # Max 500 chars
-            "quartos": parse_number(raw.get("quartos")),
-            "suites": parse_number(raw.get("suites")),
-            "vagas": parse_number(raw.get("vagas")),
-            "area_m2": parse_area(raw.get("area")),
-            "imobiliaria": raw.get("imobiliaria", ""),
-            "data_extracao": raw.get("data_extracao", ""),
-        }
+        # Parse data_extracao if it's a string, otherwise use as-is
+        data_extracao = raw.get("data_extracao")
+        if isinstance(data_extracao, str):
+            try:
+                from datetime import datetime as dt
+                data_extracao = dt.fromisoformat(data_extracao)
+            except (ValueError, TypeError):
+                data_extracao = datetime.now()
+        elif data_extracao is None:
+            data_extracao = datetime.now()
+        
+        # Create ORM object
+        imovel = FactImovel(
+            id_hex=raw["id_hex"],
+            url=raw.get("url", ""),
+            titulo=raw["titulo"],
+            preco=parse_preco(raw.get("preco", "")),
+            area_m2=parse_area(raw.get("area")),
+            quartos=parse_number(raw.get("quartos")),
+            banheiros=parse_number(raw.get("banheiros")),
+            vagas=parse_number(raw.get("vagas")),
+            endereco=raw.get("endereco", "")[:500],
+            id_imobiliaria=None,  # Will be populated by dimension lookup if needed
+            id_local=None,  # Will be populated by dimension lookup if needed
+            data_extracao=data_extracao,
+        )
+        
+        return imovel
     except Exception as e:
         logger.error(f"❌ Error transforming property: {e}")
         return None
 
 
-def load_into_db(conn: sqlite3.Connection, imovel: Dict) -> bool:
+def load_into_db(db_session: Session, imovel: FactImovel) -> bool:
     """
     Insert or update (UPSERT) property into database
-    Uses INSERT OR REPLACE to avoid duplicates
+    Uses SQLAlchemy merge for upsert on id_hex
     """
     try:
-        cursor = conn.cursor()
-        
-        sql = """
-        INSERT OR REPLACE INTO imoveis (
-            id_hex, titulo, url, preco, descricao, quartos, suites, vagas,
-            area_m2, imobiliaria, data_extracao, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        """
-        
-        cursor.execute(sql, (
-            imovel["id_hex"],
-            imovel["titulo"],
-            imovel["url"],
-            imovel["preco"],
-            imovel["descricao"],
-            imovel["quartos"],
-            imovel["suites"],
-            imovel["vagas"],
-            imovel["area_m2"],
-            imovel["imobiliaria"],
-            imovel["data_extracao"],
-        ))
-        
+        # Merge will insert or update based on primary key
+        db_session.merge(imovel)
         return True
-    except sqlite3.Error as e:
-        logger.error(f"❌ Database insert error for {imovel.get('id_hex')}: {e}")
+    except SQLAlchemyError as e:
+        logger.error(f"❌ Database insert error for {imovel.id_hex}: {e}")
+        db_session.rollback()
         return False
 
 
@@ -348,23 +344,27 @@ def send_email(subject: str, body: str, success: bool = True) -> bool:
 def run_pipeline() -> Tuple[bool, str]:
     """
     Main ETL pipeline:
-    1. Connect to Azure Storage
-    2. List JSON blobs
-    3. Load into SQLite
+    1. Connect to Azure SQL Serverless via SQLAlchemy
+    2. List JSON blobs from Azure Blob Storage
+    3. Transform and load data into database
     4. Send email notification
     """
+    engine = None
+    db_session = None
+    
     try:
         logger.info("=" * 70)
-        logger.info("🚀 Starting Bronze to Database Pipeline")
+        logger.info("🚀 Starting Bronze to Database Pipeline (SQL Server)")
         logger.info("=" * 70)
         
         # Initialize database
-        conn = create_connection(DB_PATH)
-        if not conn:
-            raise Exception("Failed to connect to database")
+        engine = get_db_engine()
+        if not ensure_database_ready(engine):
+            raise Exception("Failed to prepare database schema")
         
-        if not ensure_table_exists(conn):
-            raise Exception("Failed to create table")
+        # Create session factory
+        SessionLocal = sessionmaker(bind=engine)
+        db_session = SessionLocal()
         
         # List blobs
         blob_names = list_json_blobs()
@@ -375,7 +375,6 @@ def run_pipeline() -> Tuple[bool, str]:
         
         # Process each blob
         inserted = 0
-        updated = 0
         failed = 0
         
         for blob_name in blob_names:
@@ -399,24 +398,21 @@ def run_pipeline() -> Tuple[bool, str]:
             
             # Process each property
             for raw_imovel in data:
-                transformed = transform_imovel(raw_imovel)
+                transformed = transform_imovel(raw_imovel, db_session)
                 if not transformed:
                     failed += 1
                     continue
                 
-                if load_into_db(conn, transformed):
+                if load_into_db(db_session, transformed):
                     inserted += 1
                 else:
                     failed += 1
         
-        # Commit changes
-        conn.commit()
+        # Commit all changes
+        db_session.commit()
         
         # Get final count
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) as total FROM imoveis")
-        total = cursor.fetchone()["total"]
-        conn.close()
+        total = db_session.query(FactImovel).count()
         
         # Summary
         message = f"""
@@ -424,15 +420,15 @@ Workflow: Populate Database from Bronze
 Status: ✅ SUCCESS
 
 Statistics:
-  Total Properties Processed: {len(blob_names)} files
-  Successfully Inserted: {inserted}
+  Total Files Processed: {len(blob_names)}
+  Successfully Inserted/Updated: {inserted}
   Failed: {failed}
   Database Total Records: {total}
 
 Configuration:
   Storage Account: {STORAGE_ACCOUNT_NAME}
   Container: {CONTAINER_NAME}
-  Database: {DB_PATH}
+  Database: Azure SQL Serverless
   
 Timestamp: {datetime.now().isoformat()}
 """
@@ -444,6 +440,9 @@ Timestamp: {datetime.now().isoformat()}
         return True, message
     
     except Exception as e:
+        if db_session:
+            db_session.rollback()
+        
         error_message = f"""
 Workflow: Populate Database from Bronze
 Status: ❌ FAILED
@@ -454,12 +453,19 @@ Error Details:
 Configuration:
   Storage Account: {STORAGE_ACCOUNT_NAME}
   Container: {CONTAINER_NAME}
-  Database: {DB_PATH}
+  Database: Azure SQL Serverless
   
 Timestamp: {datetime.now().isoformat()}
 """
         logger.error(f"❌ Pipeline failed: {e}")
         return False, error_message
+    
+    finally:
+        # Cleanup
+        if db_session:
+            db_session.close()
+        if engine:
+            engine.dispose()
 
 
 # ============================================================================

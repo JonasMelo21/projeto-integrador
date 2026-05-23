@@ -28,6 +28,11 @@ WORKDIR /app
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser
 
+# Install ODBC driver for SQL Server (required for pyodbc)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    msodbcsql18 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy Python packages from builder
 COPY --from=builder /root/.local /home/appuser/.local
 
@@ -44,21 +49,18 @@ ENV PATH=/home/appuser/.local/bin:$PATH \
 ENV STORAGE_ACCOUNT_NAME=rentmasterstorageaccount \
     CONTAINER_NAME=bronze \
     BLOB_PREFIX=raw/ \
-    DB_PATH=/data/rental.db \
+    DB_CONNECTION_STRING=mssql+pyodbc://user:password@server.database.windows.net:1433/rentmaster_db?driver=ODBC+Driver+17+for+SQL+Server \
     EMAIL_FROM=python_pipeline@gmail.com \
     SMTP_SERVER=smtp.gmail.com \
     SMTP_PORT=587 \
     LOG_LEVEL=INFO
-
-# Create data volume for SQLite database
-RUN mkdir -p /data && chown -R appuser:appuser /data
 
 # Switch to non-root user
 USER appuser
 
 # Health check (optional)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD [ -f "$DB_PATH" ] && echo "OK" || exit 1
+    CMD echo "OK" || exit 1
 
 # Entry point
 ENTRYPOINT ["python", "/app/main.py"]
