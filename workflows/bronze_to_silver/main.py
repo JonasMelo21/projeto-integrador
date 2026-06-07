@@ -21,6 +21,7 @@ REJECTED_PATH = os.getenv("REJECTED_PATH", "./silver/rejected")
 PIPELINE_VERSION = os.getenv("PIPELINE_VERSION", "1.0")
 USE_AZURE = os.getenv("USE_AZURE", "false").lower() in ("1", "true", "yes")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+INPUT_FILE = os.getenv("INPUT_FILE", "")  # Se fornecido, processa APENAS esse arquivo (para integração com Data Factory)
 
 
 # Logging
@@ -166,8 +167,48 @@ def main() -> None:
     rejected_records: List[Dict] = []
     seen_ids = set()
 
-    if LOCAL_JSON_DIR:
-        logger.info(f"📁 Using local JSON directory: {LOCAL_JSON_DIR}")
+    # Mode 1: Processa APENAS um arquivo específico (ideal para Data Factory pipeline)
+    if INPUT_FILE:
+        logger.info(f"🎯 INPUT_FILE mode: Processing only '{INPUT_FILE}'")
+        
+        if LOCAL_JSON_DIR:
+            file_path = Path(LOCAL_JSON_DIR) / INPUT_FILE
+            if not file_path.exists():
+                logger.error(f"❌ File not found: {file_path}")
+                return
+            payload = load_json_file(file_path)
+            if payload is None:
+                rejected_records.append({"source_file": INPUT_FILE, "error": "read_failed"})
+            else:
+                for record in payload:
+                    transformed = transform_record(record, INPUT_FILE)
+                    if transformed is None:
+                        rejected_records.append({"source_file": INPUT_FILE, "record": record})
+                        continue
+                    all_records.append(transformed)
+                    
+        elif USE_AZURE:
+            blob_name = f"{BLOB_PREFIX}{INPUT_FILE}" if not INPUT_FILE.startswith(BLOB_PREFIX) else INPUT_FILE
+            logger.info(f"📥 Downloading blob from Azure: {blob_name}")
+            content = download_blob(blob_name)
+            if content is None:
+                rejected_records.append({"source_file": blob_name, "error": "download_failed"})
+            else:
+                try:
+                    payload = json.loads(content)
+                    records = payload if isinstance(payload, list) else [payload]
+                    for record in records:
+                        transformed = transform_record(record, blob_name)
+                        if transformed is None:
+                            rejected_records.append({"source_file": blob_name, "record": record})
+                            continue
+                        all_records.append(transformed)
+                except json.JSONDecodeError:
+                    rejected_records.append({"source_file": blob_name, "error": "invalid_json"})
+    
+    # Mode 2: Processa TODOS os arquivos (comportamento legado/default)
+    elif LOCAL_JSON_DIR:
+        logger.info(f"📁 Legacy mode: Processing ALL JSON files in {LOCAL_JSON_DIR}")
         source_dir = Path(LOCAL_JSON_DIR)
         json_files = sorted(source_dir.glob("*.json"))
         for path in json_files:
@@ -184,9 +225,11 @@ def main() -> None:
                     continue
                 seen_ids.add(transformed["id_hex"])
                 all_records.append(transformed)
+                
     elif USE_AZURE:
+        logger.info(f"📋 Legacy mode: Processing ALL JSON blobs in {CONTAINER_NAME}/{BLOB_PREFIX}")
         blob_names = list_azure_blobs()
-        logger.info(f"📋 Found {len(blob_names)} JSON blobs in {CONTAINER_NAME}/{BLOB_PREFIX}")
+        logger.info(f"📋 Found {len(blob_names)} JSON blobs")
         for blob_name in blob_names:
             content = download_blob(blob_name)
             if content is None:
@@ -208,7 +251,7 @@ def main() -> None:
                 seen_ids.add(transformed["id_hex"])
                 all_records.append(transformed)
     else:
-        logger.error("⚠️  LOCAL_JSON_DIR not set and USE_AZURE is false. Nothing to process.")
+        logger.error("⚠️  No input specified. Either set INPUT_FILE, LOCAL_JSON_DIR, or enable USE_AZURE.")
         return
 
     if all_records:
