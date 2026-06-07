@@ -31,10 +31,7 @@ CONTAINER_NAME = os.getenv("CONTAINER_NAME", "bronze")
 BLOB_PREFIX = os.getenv("BLOB_PREFIX", "raw/")
 
 # Database - SQL Server connection string
-DB_CONNECTION_STRING = os.getenv(
-    "DB_CONNECTION_STRING",
-    "mssql+pyodbc://user:password@server.database.windows.net:1433/rentmaster_db?driver=ODBC+Driver+17+for+SQL+Server"
-)
+DB_CONNECTION_STRING = os.getenv("DB_CONNECTION_STRING", "").strip()
 
 # Email
 EMAIL_FROM = os.getenv("EMAIL_FROM", "python_pipeline@gmail.com")
@@ -100,6 +97,11 @@ class FactImovel(Base):
 
 def get_db_engine():
     """Create SQLAlchemy engine for SQL Server"""
+    if not DB_CONNECTION_STRING:
+        raise ValueError(
+            "DB_CONNECTION_STRING is required. Set it in the environment or .env file."
+        )
+
     try:
         engine = create_engine(
             DB_CONNECTION_STRING,
@@ -108,7 +110,7 @@ def get_db_engine():
             pool_pre_ping=True,
             echo=False,
         )
-        logger.info(f"✅ Connected to database: {DB_CONNECTION_STRING[:50]}...")
+        logger.info("✅ Connected to database via SQLAlchemy")
         return engine
     except Exception as e:
         logger.error(f"❌ Failed to create database engine: {e}")

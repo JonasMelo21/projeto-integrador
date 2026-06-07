@@ -4,13 +4,14 @@
 # ============================================================================
 # STAGE 1: Builder
 # ============================================================================
-FROM python:3.11-slim as builder
+FROM python:3.11-slim-bookworm as builder
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for pyodbc build
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    unixodbc-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python packages
@@ -21,7 +22,7 @@ RUN pip install --user --no-cache-dir -r requirements.txt
 # ============================================================================
 # STAGE 2: Runtime
 # ============================================================================
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 WORKDIR /app
 
@@ -29,8 +30,15 @@ WORKDIR /app
 RUN useradd -m -u 1000 appuser
 
 # Install ODBC driver for SQL Server (required for pyodbc)
+# Add Microsoft repository and install msodbcsql
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    msodbcsql18 \
+    curl \
+    gnupg \
+    unixodbc \
+    && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" > /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y --no-install-recommends msodbcsql18 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python packages from builder
@@ -49,7 +57,7 @@ ENV PATH=/home/appuser/.local/bin:$PATH \
 ENV STORAGE_ACCOUNT_NAME=rentmasterstorageaccount \
     CONTAINER_NAME=bronze \
     BLOB_PREFIX=raw/ \
-    DB_CONNECTION_STRING=mssql+pyodbc://user:password@server.database.windows.net:1433/rentmaster_db?driver=ODBC+Driver+17+for+SQL+Server \
+    DB_CONNECTION_STRING="" \
     EMAIL_FROM=python_pipeline@gmail.com \
     SMTP_SERVER=smtp.gmail.com \
     SMTP_PORT=587 \
