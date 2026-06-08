@@ -265,6 +265,9 @@ def upload_to_adls(properties: list[dict], storage_account: str = "rentmastersto
                    container: str = "bronze", folder: str = "raw") -> bool:
 	"""Faz upload dos dados em JSON para Azure Data Lake Storage Gen2.
 	
+	Estratégia: Mantém arquivo único 'imoveis_latest.json' sobrescrito a cada run.
+	Antes de sobrescrever, faz backup com timestamp para auditoria/recuperação.
+	
 	Args:
 		properties: Lista de imóveis extraídos
 		storage_account: Nome da storage account no Azure
@@ -297,22 +300,39 @@ def upload_to_adls(properties: list[dict], storage_account: str = "rentmastersto
 		# Cliente do container
 		container_client = blob_service_client.get_container_client(container)
 		
-		# Nome do arquivo com timestamp
+		# Timestamp para backup
 		timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-		blob_name = f"{folder}/imoveis_{timestamp}.json"
 		
-		# Prepara dados JSON
+		# 1️⃣ BACKUP: Se imoveis_latest.json existe, fazer cópia com timestamp
+		latest_blob_name = f"{folder}/imoveis_latest.json"
+		backup_blob_name = f"{folder}/imoveis_backup_{timestamp}.json"
+		
+		try:
+			latest_blob_client = container_client.get_blob_client(latest_blob_name)
+			if latest_blob_client.exists():
+				print(f"   📦 Fazendo backup: {latest_blob_name} → {backup_blob_name}")
+				# Lê conteúdo do arquivo atual
+				backup_data = latest_blob_client.download_blob().readall()
+				# Cria backup com timestamp
+				backup_client = container_client.get_blob_client(backup_blob_name)
+				backup_client.upload_blob(backup_data, overwrite=True)
+				print(f"   ✓ Backup criado")
+		except Exception as backup_err:
+			print(f"   ⚠️  Aviso ao fazer backup: {backup_err} (continuando...)")
+		
+		# 2️⃣ UPLOAD: Sobrescreve imoveis_latest.json com novos dados
+		print(f"   📝 Atualizando: {latest_blob_name}")
 		json_data = json.dumps(properties, ensure_ascii=False, indent=2).encode("utf-8")
 		
-		# Upload
-		blob_client = container_client.get_blob_client(blob_name)
-		blob_client.upload_blob(json_data, overwrite=True)
-		blob_properties = blob_client.get_blob_properties()
+		# Upload para latest
+		latest_blob_client = container_client.get_blob_client(latest_blob_name)
+		latest_blob_client.upload_blob(json_data, overwrite=True)
+		blob_properties = latest_blob_client.get_blob_properties()
 		if blob_properties.size == 0:
-			raise RuntimeError(f"Blob '{blob_name}' foi criado, mas está vazio")
+			raise RuntimeError(f"Blob '{latest_blob_name}' foi criado, mas está vazio")
 		
 		print(f"   ✓ {len(properties)} imóveis enviados para:")
-		print(f"   📁 {storage_account}/{container}/{blob_name}")
+		print(f"   📁 {storage_account}/{container}/{latest_blob_name}")
 		return True
 		
 	except Exception as e:
