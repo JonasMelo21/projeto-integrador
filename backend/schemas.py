@@ -49,6 +49,7 @@ class FactImovelListSchema(BaseModel):
     area_m2: float
     imagem: str
     quartos: Optional[int]
+    data_extracao: Optional[datetime]
     imobiliaria_nome: Optional[str]
     local_bairro: Optional[str]
     

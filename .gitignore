@@ -43,6 +43,8 @@ data/
 *.json
 !example*.json
 !example*.csv
+workflows/bronze_to_silver/silver/cleaned/data.parquet
+workflows/bronze_to_silver/sample_data/
 
 # Time Tracking (local only)
 .time-tracking/
