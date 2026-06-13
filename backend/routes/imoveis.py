@@ -13,10 +13,10 @@ router = APIRouter()
 @router.get("/imoveis", response_model=List[FactImovelListSchema])
 async def list_imoveis(
     skip: int = 0,
-    limit: int = 10000,
+    limit: int = 50,
     db: Session = Depends(get_db)
 ):
-    """List all properties with pagination (ordered by most recent first)"""
+    """List all properties with pagination"""
     imoveis = db.query(
         FactImovel.id_imovel,
         FactImovel.titulo,
@@ -24,14 +24,13 @@ async def list_imoveis(
         FactImovel.area_m2,
         FactImovel.imagem,
         FactImovel.quartos,
-        FactImovel.data_extracao,
         DimImobiliaria.nome_empresa.label("imobiliaria_nome"),
         DimLocal.bairro.label("local_bairro"),
     ).join(
         DimImobiliaria, FactImovel.id_imobiliaria_fk == DimImobiliaria.id_imobiliaria
     ).join(
         DimLocal, FactImovel.id_local_fk == DimLocal.id_local
-    ).order_by(FactImovel.data_extracao.desc()).offset(skip).limit(limit).all()
+    ).offset(skip).limit(limit).all()
     
     return [dict(row._mapping) for row in imoveis]
 

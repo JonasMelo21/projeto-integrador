@@ -24,7 +24,7 @@ export interface PropertyDetail extends Property {
 }
 
 export const api = {
-  async getProperties(limit: number = 10000, skip: number = 0): Promise<Property[]> {
+  async getProperties(limit: number = 50, skip: number = 0): Promise<Property[]> {
     try {
       const response = await fetch(
         `${API_BASE}/imoveis?skip=${skip}&limit=${limit}`,

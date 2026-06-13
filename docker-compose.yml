@@ -7,6 +7,7 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - DATABASE_URL=sqlite:///./rental.db
       - PYTHONUNBUFFERED=1
     volumes:
       - ./backend:/app
@@ -40,27 +41,19 @@ services:
       retries: 3
       start_period: 10s
 
-  scraper:
+  scrapper:
     build:
       context: ./scrapper
       dockerfile: Dockerfile
-    container_name: rentmaster-scraper
+    container_name: rentmaster-scrapper
     environment:
-      # Python
       - PYTHONUNBUFFERED=1
-      # Scraper config
       - NUM_PAGES=2
       - FORMAT=json
       - TIMEOUT_MS=45000
-      # Azure credentials (from .env files)
-      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
-      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
-      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
-      # Storage
-      - STORAGE_ACCOUNT_NAME=${STORAGE_ACCOUNT_NAME}
     volumes:
       - ./scrapper:/app
-      - scraper_data:/app/data
+      - scrapper_data:/app/data
     networks:
       - rentmaster-network
     restart: "no"
@@ -76,7 +69,7 @@ services:
 volumes:
   backend_data:
     driver: local
-  scraper_data:
+  scrapper_data:
     driver: local
 
 networks:
