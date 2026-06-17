@@ -1,11 +1,76 @@
-import { useState } from "react";
-import { Send, Sparkles } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Send, Sparkles, Loader2 } from "lucide-react";
+
+const VANNA_SSE_URL = "http://localhost:8000/api/vanna/v2/chat_sse";
 
 interface Message {
   id: string;
   text: string;
   sender: "user" | "ai";
   timestamp: Date;
+  loading?: boolean;
+}
+
+async function askVanna(
+  question: string,
+  conversationId: string,
+  onChunk: (text: string) => void,
+  onDone: () => void,
+  onError: (msg: string) => void
+) {
+  try {
+    const res = await fetch(VANNA_SSE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: question, conversation_id: conversationId }),
+    });
+
+    if (!res.ok || !res.body) {
+      onError(`Erro ${res.status}: não foi possível conectar ao backend.`);
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let accumulated = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      // SSE lines: "data: <json>\n\n"
+      const lines = chunk.split("\n");
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const raw = line.slice(6).trim();
+        if (!raw || raw === "[DONE]") continue;
+        try {
+          const evt = JSON.parse(raw);
+          // Vanna streams different component types; extract text content
+          const text =
+            evt.text ??
+            evt.content ??
+            evt.message ??
+            (typeof evt === "string" ? evt : null);
+          if (text) {
+            accumulated += text;
+            onChunk(accumulated);
+          }
+        } catch {
+          // non-JSON line, skip
+        }
+      }
+    }
+
+    if (!accumulated) {
+      onError("O assistente não retornou resposta. Verifique se o backend está rodando.");
+    } else {
+      onDone();
+    }
+  } catch (err) {
+    onError("Não foi possível conectar ao backend (localhost:8000). Verifique se o servidor está rodando.");
+  }
 }
 
 export function ChatAIPage() {
@@ -18,17 +83,24 @@ export function ChatAIPage() {
     },
   ]);
   const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const conversationId = useRef(`conv-${Date.now()}`);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const suggestedPrompts = [
-    "Qual a média de aluguel em Pinheiros?",
+    "Qual a média de preço por bairro?",
     "Mostre imóveis com 2 quartos até R$ 3.000",
     "Quais bairros têm melhor custo-benefício?",
-    "Compare preços de Studios no centro",
+    "Quantos imóveis existem por número de quartos?",
   ];
 
   const handleSendMessage = (text?: string) => {
     const messageText = text || inputValue.trim();
-    if (!messageText) return;
+    if (!messageText || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -37,34 +109,48 @@ export function ChatAIPage() {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const aiPlaceholderId = (Date.now() + 1).toString();
+    const aiPlaceholder: Message = {
+      id: aiPlaceholderId,
+      text: "",
+      sender: "ai",
+      timestamp: new Date(),
+      loading: true,
+    };
+
+    setMessages((prev) => [...prev, userMessage, aiPlaceholder]);
     setInputValue("");
+    setIsLoading(true);
 
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: getAIResponse(messageText),
-        sender: "ai",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-    }, 1000);
-  };
-
-  const getAIResponse = (query: string): string => {
-    if (query.toLowerCase().includes("média") && query.toLowerCase().includes("pinheiros")) {
-      return "A média de aluguel em Pinheiros é de R$ 3.200 para apartamentos de 2 quartos. Os preços variam entre R$ 2.500 e R$ 4.500, dependendo da localização e comodidades.";
-    }
-    if (query.toLowerCase().includes("2 quartos")) {
-      return "Encontrei 12 imóveis com 2 quartos até R$ 3.000. Os bairros com melhor custo-benefício são: Consolação, Bela Vista e República. Gostaria de ver os resultados?";
-    }
-    if (query.toLowerCase().includes("custo-benefício")) {
-      return "Com base na análise de Machine Learning, os bairros com melhor custo-benefício atualmente são: 1) Vila Madalena (-15% abaixo da média), 2) Bela Vista (-8%), 3) Moema (-5%). Estes bairros oferecem boa infraestrutura com preços competitivos.";
-    }
-    if (query.toLowerCase().includes("studios")) {
-      return "Studios no centro variam entre R$ 1.600 e R$ 2.800. A República tem os preços mais acessíveis (média R$ 1.900), enquanto a Consolação tem média de R$ 2.400. Todos com ótima localização e acesso ao transporte público.";
-    }
-    return "Entendi sua pergunta. Estou analisando os dados do mercado imobiliário para fornecer a melhor resposta. Posso ajudar com informações sobre preços, bairros, comparações e recomendações personalizadas.";
+    askVanna(
+      messageText,
+      conversationId.current,
+      (accumulated) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiPlaceholderId ? { ...m, text: accumulated, loading: true } : m
+          )
+        );
+      },
+      () => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiPlaceholderId ? { ...m, loading: false } : m
+          )
+        );
+        setIsLoading(false);
+      },
+      (errMsg) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiPlaceholderId
+              ? { ...m, text: errMsg, loading: false }
+              : m
+          )
+        );
+        setIsLoading(false);
+      }
+    );
   };
 
   return (
@@ -77,7 +163,7 @@ export function ChatAIPage() {
           <div>
             <h2 className="text-foreground">Assistente IA</h2>
             <p className="text-sm text-muted-foreground">
-              Analise de mercado com Machine Learning
+              Análise de mercado com Text-to-SQL
             </p>
           </div>
         </div>
@@ -126,7 +212,11 @@ export function ChatAIPage() {
                     </span>
                   </div>
                 )}
-                <p className="text-sm leading-relaxed">{message.text}</p>
+                {message.loading && !message.text ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                ) : (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
+                )}
                 <p
                   className={`text-xs mt-2 ${
                     message.sender === "user"
@@ -142,6 +232,7 @@ export function ChatAIPage() {
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
@@ -154,14 +245,19 @@ export function ChatAIPage() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
               placeholder="Digite sua pergunta sobre imóveis..."
-              className="flex-1 px-4 py-3 border border-border rounded-xl bg-input-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              disabled={isLoading}
+              className="flex-1 px-4 py-3 border border-border rounded-xl bg-input-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-60"
             />
             <button
               onClick={() => handleSendMessage()}
-              disabled={!inputValue.trim()}
+              disabled={!inputValue.trim() || isLoading}
               className="px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              <Send className="w-5 h-5" />
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
               <span className="hidden md:inline">Enviar</span>
             </button>
           </div>

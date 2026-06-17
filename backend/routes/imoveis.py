@@ -2,9 +2,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from database import get_db
-from models import FactImovel, DimImobiliaria, DimLocal
-from schemas import FactImovelSchema, FactImovelListSchema
+from backend.database import get_db
+from backend.models import FactImovel, DimImobiliaria, DimLocal
+from backend.schemas import FactImovelSchema, FactImovelListSchema
 from typing import List
 
 router = APIRouter()
