@@ -1,40 +1,99 @@
-import { useState } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import { PropertyCard } from "./PropertyCard";
-import { mockProperties } from "../data/mockData";
+import { Property } from "../data/mockData";
+
+const API_URL = "http://localhost:8000/api";
+
+interface BackendImovel {
+  id_imovel: number;
+  titulo: string;
+  preco: number;
+  area_m2: number;
+  imagem: string;
+  quartos: number | null;
+  imobiliaria_nome: string | null;
+  local_bairro: string | null;
+}
+
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop";
+
+function mapToProperty(item: BackendImovel, avgPrice: number): Property {
+  return {
+    id: String(item.id_imovel),
+    title: item.titulo,
+    location: `${item.local_bairro || "Brasília"}, Brasília - DF`,
+    price: item.preco,
+    bedrooms: item.quartos ?? 0,
+    bathrooms: 0,
+    area: item.area_m2 ?? 0,
+    image: item.imagem || FALLBACK_IMAGE,
+    mlTag: item.preco <= avgPrice ? "Preço Justo" : "Oportunidade",
+    images: [item.imagem || FALLBACK_IMAGE],
+    description: "",
+    priceComparison: 0,
+    amenities: [],
+  };
+}
 
 export function HomePage() {
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("Todos");
   const [areaMin, setAreaMin] = useState(0);
   const [areaMax, setAreaMax] = useState(200);
-  const [priceMax, setPriceMax] = useState(10000);
+  const [priceMax, setPriceMax] = useState(200000);
 
-  const filters = [
-    "Todos",
-    "Apartamento",
-    "Casa",
-    "Studio",
-    "Preço Justo",
-    "Oportunidade",
-  ];
+  const filters = ["Todos", "Apartamento", "Casa", "Studio", "Preço Justo", "Oportunidade"];
 
-  const filteredProperties = mockProperties.filter((property) => {
-    // Filtro de categoria
+  useEffect(() => {
+    fetch(`${API_URL}/imoveis?limit=100`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<BackendImovel[]>;
+      })
+      .then((data) => {
+        const avg = data.reduce((sum, d) => sum + d.preco, 0) / (data.length || 1);
+        setProperties(data.map((d) => mapToProperty(d, avg)));
+        // Adjust price slider max to data range
+        const maxPrice = Math.max(...data.map((d) => d.preco), 10000);
+        setPriceMax(maxPrice);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Não foi possível conectar ao backend (localhost:8000).");
+        setLoading(false);
+      });
+  }, []);
+
+  const filteredProperties = properties.filter((property) => {
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      if (
+        !property.title.toLowerCase().includes(term) &&
+        !property.location.toLowerCase().includes(term)
+      )
+        return false;
+    }
     if (selectedFilter !== "Todos") {
-      if (selectedFilter === "Apartamento" && !property.title.toLowerCase().includes("apartamento")) return false;
-      if (selectedFilter === "Casa" && !property.title.toLowerCase().includes("casa")) return false;
-      if (selectedFilter === "Studio" && !property.title.toLowerCase().includes("studio") && !property.title.toLowerCase().includes("kitnet") && !property.title.toLowerCase().includes("loft")) return false;
+      const title = property.title.toLowerCase();
+      if (selectedFilter === "Apartamento" && !title.includes("apartamento")) return false;
+      if (selectedFilter === "Casa" && !title.includes("casa")) return false;
+      if (
+        selectedFilter === "Studio" &&
+        !title.includes("studio") &&
+        !title.includes("kitnet") &&
+        !title.includes("loft")
+      )
+        return false;
       if (selectedFilter === "Preço Justo" && property.mlTag !== "Preço Justo") return false;
       if (selectedFilter === "Oportunidade" && property.mlTag !== "Oportunidade") return false;
     }
-
-    // Filtro de área
-    if (property.area < areaMin || property.area > areaMax) return false;
-
-    // Filtro de preço
+    if (property.area > 0 && (property.area < areaMin || property.area > areaMax)) return false;
     if (property.price > priceMax) return false;
-
     return true;
   });
 
@@ -79,7 +138,9 @@ export function HomePage() {
               <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-sm min-w-[240px]">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm text-muted-foreground">Área (m²)</span>
-                  <span className="text-sm font-medium">{areaMin}m² - {areaMax}m²</span>
+                  <span className="text-sm font-medium">
+                    {areaMin}m² - {areaMax}m²
+                  </span>
                 </div>
                 <div className="flex gap-3 items-center">
                   <input
@@ -104,13 +165,15 @@ export function HomePage() {
               <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-sm min-w-[220px]">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm text-muted-foreground">Preço até</span>
-                  <span className="text-sm font-medium">R$ {priceMax.toLocaleString('pt-BR')}</span>
+                  <span className="text-sm font-medium">
+                    R$ {priceMax.toLocaleString("pt-BR")}
+                  </span>
                 </div>
                 <input
                   type="range"
                   min="0"
-                  max="10000"
-                  step="100"
+                  max={priceMax}
+                  step="500"
                   value={priceMax}
                   onChange={(e) => setPriceMax(Number(e.target.value))}
                   className="w-full accent-primary"
@@ -120,12 +183,37 @@ export function HomePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-          {filteredProperties.map((property) => (
-            <PropertyCard key={property.id} property={property} />
-          ))}
-        </div>
+        {loading && (
+          <div className="flex items-center justify-center py-20 gap-3 text-muted-foreground">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span>Carregando imóveis...</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center py-20 text-destructive">
+            <p>{error}</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Certifique-se de que o backend está rodando em localhost:8000
+            </p>
+          </div>
+        )}
+
+        {!loading && !error && filteredProperties.length === 0 && (
+          <div className="text-center py-20 text-muted-foreground">
+            Nenhum imóvel encontrado com os filtros aplicados.
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            {filteredProperties.map((property) => (
+              <PropertyCard key={property.id} property={property} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+

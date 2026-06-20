@@ -6,12 +6,13 @@ services:
     container_name: rentmaster-backend
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=sqlite:///./rental.db
-      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=sqlite:////app/rental.db
     volumes:
+      # Esse mapeamento único já resolve a persistência do código, do rental.db e do chroma_db!
       - ./backend:/app
-      - backend_data:/app/data
     networks:
       - rentmaster-network
     restart: unless-stopped
@@ -21,9 +22,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-    depends_on:
-      - frontend
-
+      
   frontend:
     build:
       context: ./frontend
@@ -34,6 +33,9 @@ services:
     networks:
       - rentmaster-network
     restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
       interval: 10s
@@ -41,36 +43,11 @@ services:
       retries: 3
       start_period: 10s
 
-  scrapper:
-    build:
-      context: ./scrapper
-      dockerfile: Dockerfile
-    container_name: rentmaster-scrapper
-    environment:
-      - PYTHONUNBUFFERED=1
-      - NUM_PAGES=2
-      - FORMAT=json
-      - TIMEOUT_MS=45000
-    volumes:
-      - ./scrapper:/app
-      - scrapper_data:/app/data
-    networks:
-      - rentmaster-network
-    restart: "no"
-    profiles:
-      - scraper
-    healthcheck:
-      test: ["CMD", "python", "-c", "print('OK')"]
-      interval: 30s
-      timeout: 10s
-      retries: 2
-      start_period: 10s
+  # O scrapper pode ficar aqui, ativado via "profiles" como você já fez perfeitamente
 
 volumes:
-  backend_data:
-    driver: local
-  scrapper_data:
-    driver: local
+  rental_db_data:
+  chroma_db_data:
 
 networks:
   rentmaster-network:
