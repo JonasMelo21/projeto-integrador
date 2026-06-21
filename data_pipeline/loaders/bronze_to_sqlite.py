@@ -4,14 +4,14 @@ import sys
 import re
 from pathlib import Path
 from datetime import datetime
-
-# Add project root to path (para importar backend)
+# Add backend directory to path (para simular o ambiente do Docker localmente)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
 
-from backend.database import SessionLocal, engine
-from backend.models import Base, FactImovel, DimImobiliaria, DimLocal
+BACKEND_DIR = PROJECT_ROOT / "backend"
+sys.path.insert(0, str(BACKEND_DIR))
 
+from database import SessionLocal, engine
+from models import Base, FactImovel, DimImobiliaria, DimLocal
 BRONZE_DIR = PROJECT_ROOT / "data" / "bronze"
 
 

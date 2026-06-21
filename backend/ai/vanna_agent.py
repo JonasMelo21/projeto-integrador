@@ -1,6 +1,7 @@
 """Vanna.AI Text-to-SQL Agent — core assembly for RentMaster"""
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
@@ -20,9 +21,19 @@ from vanna.core.system_prompt.default import DefaultSystemPromptBuilder
 
 # --- Resolved paths ---
 _AI_DIR = Path(__file__).parent
-_PROJECT_ROOT = _AI_DIR.parent.parent
 
-DATABASE_PATH = _PROJECT_ROOT / "rental.db"
+# Extrai o caminho do banco de dados da variável de ambiente (criada pelo Docker/env)
+db_url_env = os.environ.get("DATABASE_URL")
+if db_url_env and db_url_env.startswith("sqlite:///"):
+    # Remove o prefixo 'sqlite:///' para obter o caminho real do arquivo
+    db_path_str = db_url_env.replace("sqlite:///", "")
+    DATABASE_PATH = Path(db_path_str).resolve()
+else:
+    # Fallback para desenvolvimento local caso a env var falhe:
+    # Volta duas pastas a partir deste arquivo para achar a raiz do backend e procura o rental.db
+    _BACKEND_ROOT = _AI_DIR.parent
+    DATABASE_PATH = _BACKEND_ROOT / "rental.db"
+
 CHROMA_DIR = _AI_DIR / "chroma_db"
 
 # --- Google Gemini LLM ---
