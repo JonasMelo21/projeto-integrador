@@ -1,11 +1,17 @@
 """Database setup and session management"""
 import os
+from pathlib import Path 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-# Database URL - SQLite local file
-DATABASE_URL = "sqlite:///./rental.db"
+# Descobre o caminho absoluto da pasta 'backend' onde este arquivo database.py está
+BASE_DIR = Path(__file__).parent.resolve()
+
+# Tenta ler a variável de ambiente primeiro (usado pelo Docker). 
+# Se não achar (script rodando local), força o caminho absoluto para backend/rental.db
+DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR}/rental.db")
+
 
 # Engine with StaticPool for SQLite (needed for threading)
 engine = create_engine(
