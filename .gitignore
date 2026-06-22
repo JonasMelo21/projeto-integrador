@@ -70,5 +70,5 @@ htmlcov/
 
 # arquivos de ambiente
 .venv/
-
+backend/ai/chroma_db
 *.Zone.Identifier
