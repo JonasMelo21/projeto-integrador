@@ -4,16 +4,18 @@ import sys
 import re
 from pathlib import Path
 from datetime import datetime
-# Add backend directory to path (para simular o ambiente do Docker localmente)
+
+# Encontra a raiz do projeto
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-
-BACKEND_DIR = PROJECT_ROOT / "backend"
-sys.path.insert(0, str(BACKEND_DIR))
-
-from database import SessionLocal, engine
-from models import Base, FactImovel, DimImobiliaria, DimLocal
 BRONZE_DIR = PROJECT_ROOT / "data" / "bronze"
 
+# Adiciona a raiz do projeto no radar do Python, se já não estiver lá
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+# Agora ele enxerga a pasta backend que está na raiz perfeitamente!
+from backend.database import SessionLocal, engine
+from backend.models import Base, FactImovel, DimImobiliaria, DimLocal
 
 def parse_price(price_str: str) -> float:
     """Parse price string to float

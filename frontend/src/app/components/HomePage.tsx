@@ -46,6 +46,7 @@ export function HomePage() {
   const [areaMin, setAreaMin] = useState(0);
   const [areaMax, setAreaMax] = useState(200);
   const [priceMax, setPriceMax] = useState(200000);
+  const [absoluteMaxPrice, setAbsoluteMaxPrice] = useState(200000);
 
   const filters = ["Todos", "Apartamento", "Casa", "Studio", "Preço Justo", "Oportunidade"];
 
@@ -58,9 +59,11 @@ export function HomePage() {
       .then((data) => {
         const avg = data.reduce((sum, d) => sum + d.preco, 0) / (data.length || 1);
         setProperties(data.map((d) => mapToProperty(d, avg)));
+       
         // Adjust price slider max to data range
         const maxPrice = Math.max(...data.map((d) => d.preco), 10000);
-        setPriceMax(maxPrice);
+        setAbsoluteMaxPrice(maxPrice); // <-- Define o teto máximo fixo
+        setPriceMax(maxPrice);         // <-- Define a posição inicial do slider
         setLoading(false);
       })
       .catch(() => {
@@ -172,7 +175,7 @@ export function HomePage() {
                 <input
                   type="range"
                   min="0"
-                  max={priceMax}
+                  max={absoluteMaxPrice}
                   step="500"
                   value={priceMax}
                   onChange={(e) => setPriceMax(Number(e.target.value))}

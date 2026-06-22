@@ -9,7 +9,7 @@ import asyncio
 import uuid
 from pathlib import Path
 
-from ai.vanna_agent import agent_memory, DATABASE_PATH
+from backend.ai.vanna_agent import agent_memory, DATABASE_PATH
 from vanna.core.tool.models import ToolContext
 from vanna.core.user.models import User
 

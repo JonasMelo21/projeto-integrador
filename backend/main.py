@@ -2,27 +2,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-import sys
-from pathlib import Path
 
 # Load environment variables
 load_dotenv()
 
-# Add project root to path so `backend*` imports resolve
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-# Import database setup
-from database import init_db, SessionLocal
-
-# Import routes
-from routes import imoveis, dimensoes
+# Import database setup referenciando a pasta backend
+from backend.database import init_db, SessionLocal
+from backend.models import FactImovel
+from backend.routes import imoveis, dimensoes
+from backend.ai.vanna_agent import server as vanna_server
 
 
 def startup_db():
     """Initialize database"""
     init_db()
 
-    from models import FactImovel
     db = SessionLocal()
     try:
         count = db.query(FactImovel).count()
@@ -61,9 +55,4 @@ app.include_router(dimensoes.router, prefix="/api", tags=["dimensoes"])
 async def health():
     return {"status": "ok"}
 
-
-# Vanna sub-app MUST be mounted last — its internal routes start with
-# /api/vanna/v2/ which will not collide with /api/imoveis or /api/dimensoes
-# because FastAPI checks named routes before mount points.
-from ai.vanna_agent import server as vanna_server
 app.mount("/", vanna_server.create_app())

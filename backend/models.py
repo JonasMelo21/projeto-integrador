@@ -1,7 +1,7 @@
 """SQLAlchemy ORM Models for Star Schema"""
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
-from database import Base
+from backend.database import Base
 
 
 class DimImobiliaria(Base):

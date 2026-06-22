@@ -1,9 +1,9 @@
 """Dimensões (Dimensions) API Routes"""
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from database import get_db
-from models import DimImobiliaria, DimLocal
-from schemas import DimImobiliariaSchema, DimLocalSchema
+from ..database import get_db
+from ..models import DimImobiliaria, DimLocal
+from ..schemas import DimImobiliariaSchema, DimLocalSchema
 from typing import List
 
 router = APIRouter()
