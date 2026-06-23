@@ -81,15 +81,30 @@ def extract_property_data(article_html: str) -> dict:
         link_elem = soup.find("a", class_="imovel-card")
         url = link_elem.get("href", "N/A") if link_elem else "N/A"
 
-        # Preço
+        # ======= CORREÇÃO 1: SANITIZAÇÃO DO PREÇO =======
         price_elem = soup.find("p", {"itemprop": "price"})
-        price = price_elem.get("content", "N/A") if price_elem else "N/A"
+        raw_price = price_elem.get("content", "N/A") if price_elem else "N/A"
+        price = "N/A"
+        
+        if raw_price != "N/A":
+            # Remove espaços em branco
+            clean_price = raw_price.strip()
+            # O padrão brasileiro usa ponto para milhar e vírgula para decimal.
+            # Se a string contiver vírgula (ex: "12.500,00"), limpamos o ponto e trocamos a vírgula.
+            if "," in clean_price:
+                clean_price = clean_price.replace(".", "").replace(",", ".")
+            else:
+                # Se for apenas "12.500", apagamos o ponto para não virar float gringo (12.5)
+                clean_price = clean_price.replace(".", "")
+            
+            price = clean_price
+        # ================================================
 
         # Descrição
         desc_elem = soup.find("p", {"itemprop": "description"})
         description = desc_elem.text.strip()[:200] if desc_elem else "N/A"
 
-        # Características (Quartos, Suítes, Vagas, Área)
+        # ======= CORREÇÃO 2: EXTRAÇÃO SEMÂNTICA =======
         quartos = "N/A"
         suites = "N/A"
         vagas = "N/A"
@@ -98,23 +113,19 @@ def extract_property_data(article_html: str) -> dict:
         feature_divs = soup.find_all("div", class_=lambda x: x and "border-1" in x and "rounded-pill" in x)
 
         for div in feature_divs:
-            text = div.text.strip()
-            if "m²" in text and area_text == "N/A":
-                area_text = text
-            elif quartos == "N/A" and "quarto" in text.lower():
-                quartos = text
-            elif suites == "N/A" and "suíte" in text.lower():
-                suites = text
-            elif vagas == "N/A" and ("vaga" in text.lower() or "garagem" in text.lower()):
-                vagas = text
+            text = div.text.strip().lower()
+            # Identificação pura por palavra-chave na string, ignorando a ordem das tags
+            if "m²" in text:
+                area_text = div.text.strip()
+            elif "quarto" in text:
+                quartos = div.text.strip()
+            elif "suíte" in text or "suite" in text:
+                suites = div.text.strip()
+            elif "vaga" in text or "garagem" in text:
+                vagas = div.text.strip()
 
-        if quartos == "N/A" or suites == "N/A" or vagas == "N/A":
-            if len(feature_divs) >= 1 and quartos == "N/A":
-                quartos = feature_divs[0].text.strip()
-            if len(feature_divs) >= 2 and suites == "N/A":
-                suites = feature_divs[1].text.strip()
-            if len(feature_divs) >= 3 and vagas == "N/A":
-                vagas = feature_divs[2].text.strip()
+        # O bloco de fallback condicional (feature_divs[0], [1], [2]) foi deletado.
+        # ==============================================
 
         # Imagens
         images = []
@@ -167,7 +178,6 @@ def extract_property_data(article_html: str) -> dict:
     except Exception as e:
         print(f"Erro ao extrair dados: {e}")
         return {}
-
 
 def scrape_properties(url: str, timeout_ms: int = 45_000, num_pages: int = 1) -> list[dict]:
     """Faz scraping de imóveis da página DFimoveis com suporte a paginação.

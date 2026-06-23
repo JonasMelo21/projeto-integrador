@@ -72,3 +72,8 @@ htmlcov/
 .venv/
 backend/ai/chroma_db
 *.Zone.Identifier
+
+
+# Vanna AI Artifacts
+bbc5e661e106c6dc/
+backend/bbc5e661e106c6dc

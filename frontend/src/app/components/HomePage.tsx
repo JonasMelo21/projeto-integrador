@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import { PropertyCard } from "./PropertyCard";
-import { Property } from "../data/mockData";
+import { Property } from "../type";
 
 const API_URL = "http://localhost:8000/api";
 

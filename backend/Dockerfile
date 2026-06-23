@@ -3,14 +3,22 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 WORKDIR /app
 
-# Instala curl para o healthcheck
+# Instala curl para o healthcheck (mantido do seu original)
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Copia o TOML e o LOCK da raiz (que agora são os únicos do projeto)
+# Copia o TOML e o LOCK da raiz
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-dev
 
-# Copia todo o resto
+# =====================================================================
+# CONFIGURAÇÃO DO PLAYWRIGHT
+# 1. Baixa os binários do Chromium usando o ambiente virtual do uv
+RUN uv run playwright install chromium
+# 2. Instala as dependências de SO (libglib, etc) exigidas pelo Chromium
+RUN uv run playwright install-deps chromium
+# =====================================================================
+
+# Copia todo o resto do projeto
 COPY . .
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=2 \
