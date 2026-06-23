@@ -43,15 +43,18 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("Todos");
+  
   const [areaMin, setAreaMin] = useState(0);
   const [areaMax, setAreaMax] = useState(200);
+  const [absoluteMaxArea, setAbsoluteMaxArea] = useState(200);
+  
   const [priceMax, setPriceMax] = useState(200000);
   const [absoluteMaxPrice, setAbsoluteMaxPrice] = useState(200000);
 
   const filters = ["Todos", "Apartamento", "Casa", "Studio", "Preço Justo", "Oportunidade"];
 
   useEffect(() => {
-    fetch(`${API_URL}/imoveis?limit=100`)
+    fetch(`${API_URL}/imoveis?limit=1000`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<BackendImovel[]>;
@@ -60,17 +63,23 @@ export function HomePage() {
         const avg = data.reduce((sum, d) => sum + d.preco, 0) / (data.length || 1);
         setProperties(data.map((d) => mapToProperty(d, avg)));
        
-        // Adjust price slider max to data range
+        // Dinamismo de Preço
         const maxPrice = Math.max(...data.map((d) => d.preco), 10000);
-        setAbsoluteMaxPrice(maxPrice); // <-- Define o teto máximo fixo
-        setPriceMax(maxPrice);         // <-- Define a posição inicial do slider
+        setAbsoluteMaxPrice(maxPrice); 
+        setPriceMax(maxPrice);         
+
+        // Dinamismo de Área
+        const maxArea = Math.max(...data.map((d) => d.area_m2 || 0), 200);
+        setAbsoluteMaxArea(maxArea);
+        setAreaMax(maxArea);
+
         setLoading(false);
       })
       .catch(() => {
-        setError("Não foi possível conectar ao backend (localhost:8000).");
+        setError("Não foi possível conectar ao backend.");
         setLoading(false);
       });
-  }, []);
+  }, []); // <--- ESTE É O FECHAMENTO QUE ESTAVA FALTANDO!
 
   const filteredProperties = properties.filter((property) => {
     if (searchTerm) {
@@ -149,7 +158,7 @@ export function HomePage() {
                   <input
                     type="range"
                     min="0"
-                    max="200"
+                    max={absoluteMaxArea}
                     value={areaMin}
                     onChange={(e) => setAreaMin(Number(e.target.value))}
                     className="flex-1 accent-primary"
@@ -157,7 +166,7 @@ export function HomePage() {
                   <input
                     type="range"
                     min="0"
-                    max="200"
+                    max={absoluteMaxArea}
                     value={areaMax}
                     onChange={(e) => setAreaMax(Number(e.target.value))}
                     className="flex-1 accent-primary"
@@ -219,4 +228,3 @@ export function HomePage() {
     </div>
   );
 }
-
