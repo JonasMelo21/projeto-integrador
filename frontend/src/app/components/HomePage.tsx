@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Search, SlidersHorizontal, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { PropertyCard } from "./PropertyCard";
 import { Property } from "../type";
 
@@ -14,12 +14,13 @@ interface BackendImovel {
   quartos: number | null;
   imobiliaria_nome: string | null;
   local_bairro: string | null;
+  classificacao_preco?: string;
 }
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop";
 
-function mapToProperty(item: BackendImovel, avgPrice: number): Property {
+function mapToProperty(item: BackendImovel): Property {
   return {
     id: String(item.id_imovel),
     title: item.titulo,
@@ -29,7 +30,7 @@ function mapToProperty(item: BackendImovel, avgPrice: number): Property {
     bathrooms: 0,
     area: item.area_m2 ?? 0,
     image: item.imagem || FALLBACK_IMAGE,
-    mlTag: item.preco <= avgPrice ? "Preço Justo" : "Oportunidade",
+    mlTag: item.classificacao_preco || "Sem Classificação", // PUXANDO DO ML
     images: [item.imagem || FALLBACK_IMAGE],
     description: "",
     priceComparison: 0,
@@ -44,6 +45,10 @@ export function HomePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("Todos");
   
+  // Estados para Paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 30;
+  
   const [areaMin, setAreaMin] = useState(0);
   const [areaMax, setAreaMax] = useState(200);
   const [absoluteMaxArea, setAbsoluteMaxArea] = useState(200);
@@ -51,7 +56,7 @@ export function HomePage() {
   const [priceMax, setPriceMax] = useState(200000);
   const [absoluteMaxPrice, setAbsoluteMaxPrice] = useState(200000);
 
-  const filters = ["Todos", "Apartamento", "Casa", "Studio", "Preço Justo", "Oportunidade"];
+  const filters = ["Todos", "Apartamento", "Casa", "Studio", "Barato", "Preço Justo", "Caro"];
 
   useEffect(() => {
     fetch(`${API_URL}/imoveis?limit=1000`)
@@ -60,8 +65,7 @@ export function HomePage() {
         return res.json() as Promise<BackendImovel[]>;
       })
       .then((data) => {
-        const avg = data.reduce((sum, d) => sum + d.preco, 0) / (data.length || 1);
-        setProperties(data.map((d) => mapToProperty(d, avg)));
+        setProperties(data.map((d) => mapToProperty(d)));
        
         // Dinamismo de Preço
         const maxPrice = Math.max(...data.map((d) => d.preco), 10000);
@@ -79,8 +83,14 @@ export function HomePage() {
         setError("Não foi possível conectar ao backend.");
         setLoading(false);
       });
-  }, []); // <--- ESTE É O FECHAMENTO QUE ESTAVA FALTANDO!
+  }, []);
 
+  // Resetar a página para 1 sempre que os filtros mudarem
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedFilter, areaMin, areaMax, priceMax]);
+
+  // Aplica todos os filtros primeiro
   const filteredProperties = properties.filter((property) => {
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -101,13 +111,21 @@ export function HomePage() {
         !title.includes("loft")
       )
         return false;
+      if (selectedFilter === "Barato" && property.mlTag !== "Barato") return false;
       if (selectedFilter === "Preço Justo" && property.mlTag !== "Preço Justo") return false;
-      if (selectedFilter === "Oportunidade" && property.mlTag !== "Oportunidade") return false;
+      if (selectedFilter === "Caro" && property.mlTag !== "Caro") return false;
     }
     if (property.area > 0 && (property.area < areaMin || property.area > areaMax)) return false;
     if (property.price > priceMax) return false;
     return true;
   });
+
+  // Fatiar a lista filtrada para mostrar apenas 30 imóveis da página atual
+  const totalPages = Math.ceil(filteredProperties.length / ITEMS_PER_PAGE);
+  const paginatedProperties = filteredProperties.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -217,12 +235,48 @@ export function HomePage() {
           </div>
         )}
 
-        {!loading && !error && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {filteredProperties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
-            ))}
-          </div>
+        {!loading && !error && filteredProperties.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+              {/* O GRID AGORA RENDERIZA APENAS OS 30 FATIADOS */}
+              {paginatedProperties.map((property) => (
+                <PropertyCard key={property.id} property={property} />
+              ))}
+            </div>
+
+            {/* CONTROLES DE PAGINAÇÃO */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-10 mb-4">
+                <button
+                  onClick={() => {
+                    setCurrentPage(p => Math.max(1, p - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === 1}
+                  className="p-2 flex items-center gap-2 rounded-xl border border-border hover:bg-secondary disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                  <span className="hidden sm:inline">Anterior</span>
+                </button>
+                
+                <span className="text-sm font-medium text-muted-foreground">
+                  Página <span className="text-foreground">{currentPage}</span> de {totalPages}
+                </span>
+
+                <button
+                  onClick={() => {
+                    setCurrentPage(p => Math.min(totalPages, p + 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === totalPages}
+                  className="p-2 flex items-center gap-2 rounded-xl border border-border hover:bg-secondary disabled:opacity-50 disabled:hover:bg-transparent transition-colors"
+                >
+                  <span className="hidden sm:inline">Próxima</span>
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

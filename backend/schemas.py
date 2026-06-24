@@ -37,6 +37,7 @@ class FactImovelSchema(BaseModel):
     data_extracao: datetime
     imobiliaria: Optional[DimImobiliariaSchema]
     local: Optional[DimLocalSchema]
+    classificacao_preco: Optional[str] = None
     
     class Config:
         from_attributes = True
@@ -51,6 +52,7 @@ class FactImovelListSchema(BaseModel):
     quartos: Optional[int]
     imobiliaria_nome: Optional[str]
     local_bairro: Optional[str]
+    classificacao_preco: Optional[str] = None
     
     class Config:
         from_attributes = True

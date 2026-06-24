@@ -29,6 +29,7 @@ interface BackendImovelDetail {
   descricao: string | null;
   imobiliaria: { nome_empresa: string } | null;
   local: { bairro: string; cidade: string; uf: string } | null;
+  classificacao_preco?: string;
 }
 
 const FALLBACK_IMAGE =
@@ -128,7 +129,17 @@ export function PropertyDetailsPage() {
         <div className="grid md:grid-cols-3 gap-6 md:gap-8">
           <div className="md:col-span-2 space-y-6">
             <div>
-              <h1 className="mb-2">{property.titulo}</h1>
+              <div className="flex flex-col items-start gap-3 mb-2">
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${
+                  property.classificacao_preco === "Barato" ? "bg-green-100 text-green-800" :
+                  property.classificacao_preco === "Preço Justo" ? "bg-blue-100 text-blue-800" :
+                  property.classificacao_preco === "Caro" ? "bg-red-100 text-red-800" :
+                  "bg-gray-100 text-gray-800"
+                }`}>
+                  Análise ML: {property.classificacao_preco || "Não Avaliado"}
+                </span>
+                <h1 className="text-2xl md:text-3xl font-bold">{property.titulo}</h1>
+              </div>
               <div className="flex items-center gap-2 text-muted-foreground mb-4">
                 <MapPin className="w-5 h-5" />
                 <span>{location}</span>

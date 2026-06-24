@@ -7,7 +7,7 @@ export interface Property {
   bathrooms: number;
   area: number;
   image: string;
-  mlTag: "Preço Justo" | "Oportunidade";
+  mlTag: string;
   images: string[];
   description: string;
   priceComparison: number;

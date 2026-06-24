@@ -194,7 +194,7 @@ def scrape_properties(url: str, timeout_ms: int = 45_000, num_pages: int = 1) ->
     seen_ids = set()
 
     for page_num in range(1, num_pages + 1):
-        page_url = f"{url}?page={page_num}" if page_num > 1 else url
+        page_url = f"{url}?pagina={page_num}" if page_num > 1 else url
 
         print(f"\n📄 Extraindo página {page_num}/{num_pages}: {page_url}")
 
