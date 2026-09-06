@@ -10,9 +10,10 @@ import pandas as pd
 import joblib
 from sklearn.metrics import accuracy_score, f1_score, classification_report, confusion_matrix
 
+from ml_pipeline.data import FEATURE_COLUMNS, TARGET_COLUMN, load_gold_fact, split_time_based
+
 # Caminhos
 PROJECT_ROOT = Path(__file__).parent.parent
-TEST_PATH = PROJECT_ROOT / "data" / "gold" / "test.parquet"
 MODEL_PATH = PROJECT_ROOT / "ml_pipeline" / "models" / "random_forest_optimized.joblib"
 
 def main():
@@ -21,14 +22,13 @@ def main():
     print("=" * 60)
 
     # 1. Carregar os dados que o modelo nunca viu (Split de Teste)
-    if not TEST_PATH.exists() or not MODEL_PATH.exists():
+    if not MODEL_PATH.exists():
         print("❌ Erro: Conjunto de teste ou modelo otimizado não encontrados.")
         return
 
-    test_df = pd.read_parquet(TEST_PATH)
-    features_cols = ["bairro_area_cross", "imobiliaria_hash", "quartos", "suites", "vagas"]
-    X_test = test_df[features_cols]
-    y_test = test_df["target_preco"]
+    _, _, test_df = split_time_based(load_gold_fact())
+    X_test = test_df[FEATURE_COLUMNS]
+    y_test = test_df[TARGET_COLUMN]
 
     # 2. Carregar o melhor artefato gerado pelo AutoML
     print(f"Carregando modelo: {MODEL_PATH.name}")

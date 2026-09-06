@@ -1,0 +1,1 @@
+[link para o doc no google docs (tem que ta logado no google docs ca conta do ceub)](https://docs.google.com/document/d/1EyfCLhxpSoG0mhlVQ7-xd5I2io2CEcSs9oXM70agqw8/edit?usp=sharing)

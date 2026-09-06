@@ -13,36 +13,42 @@ from datetime import datetime
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import classification_report
 
+from ml_pipeline.data import FEATURE_COLUMNS, TARGET_COLUMN, load_gold_fact, split_time_based
+
 # Caminhos
 PROJECT_ROOT = Path(__file__).parent.parent
-GOLD_DIR = PROJECT_ROOT / "data" / "gold"
 MODELS_DIR = PROJECT_ROOT / "ml_pipeline" / "models"
 
 def load_train_data() -> tuple[pd.DataFrame, pd.Series]:
     """Para tuning com validação cruzada (CV), juntamos Treino e Validação."""
-    train_df = pd.read_parquet(GOLD_DIR / "train.parquet")
-    valid_df = pd.read_parquet(GOLD_DIR / "valid.parquet")
-    
-    # Combinamos para o algoritmo de Cross Validation ter mais dados para dobrar (folds)
+    train_df, valid_df, _ = split_time_based(load_gold_fact())
     full_train = pd.concat([train_df, valid_df], ignore_index=True)
-    
-    features_cols = ["bairro_area_cross", "imobiliaria_hash", "quartos", "suites", "vagas"]
-    X = full_train[features_cols]
-    y = full_train["target_preco"]
+
+    X = full_train[FEATURE_COLUMNS]
+    y = full_train[TARGET_COLUMN]
     
     return X, y
 
 def get_tuning_pipeline() -> Pipeline:
     cat_features = ["bairro_area_cross"]
+    num_features = [column for column in FEATURE_COLUMNS if column not in cat_features]
     
-    preprocessor = ColumnTransformer(
-        transformers=[("cat", OneHotEncoder(handle_unknown="ignore"), cat_features)],
-        remainder="passthrough"
-    )
+    preprocessor = ColumnTransformer(transformers=[
+        (
+            "cat",
+            Pipeline([
+                ("imputer", SimpleImputer(strategy="most_frequent")),
+                ("onehot", OneHotEncoder(handle_unknown="ignore")),
+            ]),
+            cat_features,
+        ),
+        ("num", SimpleImputer(strategy="median"), num_features),
+    ])
 
     return Pipeline([
         ("preprocessor", preprocessor),

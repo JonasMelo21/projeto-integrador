@@ -10,16 +10,13 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 
+from ml_pipeline.data import TARGET_COLUMN, load_gold_fact, split_time_based
+
 # Caminhos
 PROJECT_ROOT = Path(__file__).parent.parent
-GOLD_DIR = PROJECT_ROOT / "data" / "gold"
-TRAIN_PATH = GOLD_DIR / "train.parquet"
-TEST_PATH = GOLD_DIR / "test.parquet"
-
 def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Carrega os dados da camada Gold."""
-    train_df = pd.read_parquet(TRAIN_PATH)
-    test_df = pd.read_parquet(TEST_PATH)
+    """Carrega a fato Gold e retorna treino e teste temporais."""
+    train_df, _, test_df = split_time_based(load_gold_fact())
     return train_df, test_df
 
 def evaluate_predictions(y_true: pd.Series, y_pred: np.ndarray, model_name: str) -> None:
@@ -77,8 +74,8 @@ def main():
     
     train_df, test_df = load_data()
     
-    y_train = train_df["target_preco"]
-    y_test = test_df["target_preco"]
+    y_train = train_df[TARGET_COLUMN]
+    y_test = test_df[TARGET_COLUMN]
     
     # Executa os três baselines propostos pela Chip Huyen
     zero_rule_baseline(y_train, y_test)

@@ -11,37 +11,40 @@ import joblib
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 
-# Configuração de Caminhos
+from ml_pipeline.data import FEATURE_COLUMNS, TARGET_COLUMN, load_gold_fact, split_time_based
+
 PROJECT_ROOT = Path(__file__).parent.parent
-GOLD_DIR = PROJECT_ROOT / "data" / "gold"
 MODELS_DIR = PROJECT_ROOT / "ml_pipeline" / "models"
 
 def load_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Carrega as bases de Treino, Validação e Teste da camada Gold."""
-    train_df = pd.read_parquet(GOLD_DIR / "train.parquet")
-    valid_df = pd.read_parquet(GOLD_DIR / "valid.parquet")
-    test_df = pd.read_parquet(GOLD_DIR / "test.parquet")
-    return train_df, valid_df, test_df
+    """Carrega a fato Gold e cria os splits temporais para o treinamento."""
+    return split_time_based(load_gold_fact())
 
 def build_pipeline() -> Pipeline:
     """
     Constrói a arquitetura do modelo unindo pré-processamento e o algoritmo.
     Isso blinda a esteira contra Data Leakage.
     """
-    # Features Categóricas e Numéricas
     cat_features = ["bairro_area_cross"]
-    # imobiliaria_hash já é um inteiro, tratamos como numérica contínua/discreta
-    num_features = ["imobiliaria_hash", "quartos", "suites", "vagas"]
+    num_features = [column for column in FEATURE_COLUMNS if column not in cat_features]
 
-    # Pré-processamento: OHE para categorias, passa direto os numéricos
     preprocessor = ColumnTransformer(
         transformers=[
-            ("cat", OneHotEncoder(handle_unknown="ignore"), cat_features)
+            (
+                "cat",
+                Pipeline([
+                    ("imputer", SimpleImputer(strategy="most_frequent")),
+                    ("onehot", OneHotEncoder(handle_unknown="ignore")),
+                ]),
+                cat_features,
+            ),
+            ("num", SimpleImputer(strategy="median"), num_features),
         ],
-        remainder="passthrough"
+        remainder="drop",
     )
 
     # Algoritmo Base (Simples e interpretável)
@@ -64,12 +67,11 @@ def main():
     print("=" * 60)
 
     # 1. Carregar Dados
-    train_df, valid_df, _ = load_data() # O teste fica guardado para o final da pipeline
+    train_df, valid_df, _ = load_data()
 
     # Separar Features (X) e Target (y)
-    features_cols = ["bairro_area_cross", "imobiliaria_hash", "quartos", "suites", "vagas"]
-    X_train, y_train = train_df[features_cols], train_df["target_preco"]
-    X_valid, y_valid = valid_df[features_cols], valid_df["target_preco"]
+    X_train, y_train = train_df[FEATURE_COLUMNS], train_df[TARGET_COLUMN]
+    X_valid, y_valid = valid_df[FEATURE_COLUMNS], valid_df[TARGET_COLUMN]
 
     # 2. Construir e Treinar o Pipeline
     print(f"Treinando em {len(X_train)} amostras...")

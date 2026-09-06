@@ -1,0 +1,66 @@
+erDiagram
+    tb_usuarios ||--o{ tb_favoritos : salva
+    tb_usuarios ||--o{ tb_chat_historico : realiza
+    tb_localizacoes ||--o{ tb_imoveis : possui
+    tb_imoveis ||--o{ tb_favoritos : recebe
+    tb_imoveis ||--o{ tb_analises_ml : gera
+
+    tb_usuarios {
+        string id_usuario
+        string nome
+        string email
+        string senha_hash
+        date data_cadastro
+    }
+    
+    tb_localizacoes {
+        int id_localizacao
+        string cidade
+        string bairro
+        string cep
+        float latitude
+        float longitude
+    }
+    
+    tb_imoveis {
+        int id_imovel
+        int id_localizacao
+        string portal_origem
+        string url_anuncio
+        string titulo_anuncio
+        string tipo_imovel
+        float preco_aluguel
+        float valor_condominio
+        float valor_iptu
+        int area_m2
+        int num_quartos
+        int num_banheiros
+        int num_vagas
+        boolean aceita_pet
+        boolean mobiliado
+        boolean status_ativo
+    }
+    
+    tb_analises_ml {
+        int id_analise
+        int id_imovel
+        float preco_estimado
+        string classificacao_preco
+        float score_confianca
+        date data_analise
+    }
+    
+    tb_favoritos {
+        string id_usuario
+        int id_imovel
+        date data_favoritado
+    }
+    
+    tb_chat_historico {
+        int id_chat
+        string id_usuario
+        string pergunta_usuario
+        string query_sql_gerada
+        string resposta_ia
+        date data_interacao
+    }

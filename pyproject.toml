@@ -11,22 +11,22 @@ dependencies = [
     "sqlalchemy>=2.0.0",
     "pydantic>=2.0.0",
     "python-dotenv>=1.0.0",
-    
     # 🧠 Data Processing & Machine Learning
     "pandas>=2.0.0",
     "numpy>=1.24.0",
     "pyarrow>=14.0.0",
     "scikit-learn>=1.9.0",
     "joblib>=1.5.3",
-    
     # 🤖 AI Agent (Vanna)
     "vanna>=0.7.0",
     "chromadb>=0.4.0",
     "google-genai>=1.0.0",
-    
     # 🕷️ Web Scraping
     "beautifulsoup4>=4.12.0",
     "playwright>=1.40.0",
+    "google-auth>=2.55.0",
+    "google-auth-httplib2>=0.4.2",
+    "google-auth-oauthlib>=1.4.1",
 ]
 
 [dependency-groups]

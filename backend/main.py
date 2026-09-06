@@ -9,7 +9,7 @@ load_dotenv()
 # Import database setup referenciando a pasta backend
 from backend.database import init_db, SessionLocal
 from backend.models import FactImovel
-from backend.routes import imoveis, dimensoes
+from backend.routes import imoveis, dimensoes, auth
 from backend.ai.vanna_agent import server as vanna_server
 
 
@@ -49,6 +49,7 @@ app.add_middleware(
 # Named routes first
 app.include_router(imoveis.router, prefix="/api", tags=["imoveis"])
 app.include_router(dimensoes.router, prefix="/api", tags=["dimensoes"])
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
 
 
 @app.get("/health")

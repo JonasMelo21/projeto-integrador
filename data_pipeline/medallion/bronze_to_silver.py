@@ -18,8 +18,8 @@ BRONZE_DIR = PROJECT_ROOT / "data" / "bronze"
 SILVER_DIR = PROJECT_ROOT / "data" / "silver"
 SILVER_FILE = SILVER_DIR / "imoveis_limpos.parquet"
 
-# 2. 'id_hex' removido da lista de descarte para ser mantido na Silver
-COLS_DROP = ["url", "imagem", "imagens", "id_imovel"] 
+# Mantém a URL do imóvel na Silver para debug e rastreio posterior.
+COLS_DROP = ["imagem", "imagens", "id_imovel"]
 
 
 def load_bronze() -> pd.DataFrame:
@@ -72,6 +72,7 @@ def parse_preco(series: pd.Series) -> pd.Series:
         .str.replace(",", ".", regex=False)
         .str.strip()
         .pipe(pd.to_numeric, errors="coerce")
+        .astype(float)
     )
 
 
@@ -83,16 +84,27 @@ def parse_area(series: pd.Series) -> pd.Series:
         .str.replace(".", "", regex=False)
         .str.replace(",", ".", regex=False)
         .pipe(pd.to_numeric, errors="coerce")
+        .astype(float)
     )
 
 
 def parse_inteiro(series: pd.Series) -> pd.Series:
-    """Extrai o primeiro inteiro de strings como '4 Quartos' ou 'Sem vaga' → 0."""
-    def _extract(val: str) -> float:
-        match = re.search(r"\d+", str(val))
-        return float(match.group()) if match else 0.0
+    """Extrai o primeiro inteiro de strings como '4 Quartos'; retorna nulo se não houver informação explícita."""
+    def _extract(val: str):
+        if val is None:
+            return pd.NA
 
-    return series.apply(_extract)
+        text = str(val).strip()
+        if text in {"", "N/A", "nan", "None", "NaN"}:
+            return pd.NA
+
+        match = re.search(r"\d+", text)
+        if not match:
+            return pd.NA
+
+        return int(match.group())
+
+    return series.apply(_extract).astype("Int64")
 
 
 def clean_text(series: pd.Series) -> pd.Series:
@@ -113,11 +125,11 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
     
     # Tratamentos básicos numéricos e de texto
     if "preco" in df.columns:
-        df["preco"] = parse_preco(df["preco"])
+        df["preco"] = parse_preco(df["preco"]).astype(float)
     if "area" in df.columns:
-        df["area_m2"] = parse_area(df["area"])
+        df["area_m2"] = parse_area(df["area"]).astype(float)
         df = df.drop(columns=["area"])
-    for col in ["quartos", "suites", "vagas"]:
+    for col in ["quartos", "suites", "banheiros", "vagas"]:
         if col in df.columns:
             df[col] = parse_inteiro(df[col])
     for col in ["titulo", "descricao"]:

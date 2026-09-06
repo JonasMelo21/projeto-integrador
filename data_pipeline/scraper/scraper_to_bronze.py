@@ -11,6 +11,7 @@ import hashlib
 import json
 import re
 import time
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 
@@ -19,15 +20,45 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 
-# Bairros/regiões do Distrito Federal para extração a partir do título
+# Bairros/regiões do Distrito Federal para extração a partir do título.
+# A lista inclui as formas canonicas e a comparação passa a ignorar acentos e
+# variações de grafia típicas do scraper (ex.: Guara, Aguas Claras, Jardim Botanico).
 BAIRROS_DF = [
     "Asa Sul", "Asa Norte", "Sudoeste", "Noroeste", "Lago Sul", "Lago Norte",
-    "Águas Claras", "Guará", "Cruzeiro", "Taguatinga", "Ceilândia", "Samambaia",
-    "Planaltina", "Sobradinho", "Gama", "Santa Maria", "Recanto das Emas",
-    "Riacho Fundo", "Núcleo Bandeirante", "Candangolândia", "Park Way",
+    "Águas Claras", "Guará", "Cruzeiro", "Taguatinga", "Ceilândia", "Ceilândia Sul",
+    "Samambaia", "Planaltina", "Sobradinho", "Gama", "Santa Maria", "Recanto das Emas",
+    "Riacho Fundo", "Núcleo Bandeirante", "Candangolândia", "Park Sul", "Park Way",
     "Vicente Pires", "Arniqueira", "Itapoã", "Paranoá", "São Sebastião",
-    "Jardim Botânico", "Octogonal", "Varjão", "Setor Industrial", "SAAN", "SIA",
+    "Jardim Botânico", "Jardins Mangueiral", "Octogonal", "Varjão", "Setor Industrial",
+    "Núcleo Bandeirante", "SAAN", "SIA", "Guara II", "Setor de Indústrias Bernardo Sayão",
+    "Zona Cívico Administrativa", "Ceilândia Sul", "Porteira",
 ]
+
+BAIRRO_ALIASES = {
+    "aguas claras": "Águas Claras",
+    "guara": "Guará",
+    "guara ii": "Guara II",
+    "jardim botanico": "Jardim Botânico",
+    "jardins mangueiral": "Jardins Mangueiral",
+    "ceilandia": "Ceilândia",
+    "ceilandia sul": "Ceilândia Sul",
+    "paranoa": "Paranoá",
+    "nucleo bandeirante": "Núcleo Bandeirante",
+    "candangolandia": "Candangolândia",
+    "park sul": "Park Sul",
+    "setor de industrias bernardo sayao": "Setor de Indústrias Bernardo Sayão",
+    "zona civico administrativa": "Zona Cívico Administrativa",
+}
+
+
+def normalize_text(value: str) -> str:
+    """Normaliza texto para comparação sem acentos e com espaços padronizados."""
+    value = str(value or "")
+    normalized = unicodedata.normalize("NFKD", value)
+    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    normalized = normalized.lower()
+    normalized = re.sub(r"[^a-z0-9]+", " ", normalized)
+    return normalized.strip()
 
 
 def generate_property_id(url: str) -> str:
@@ -40,18 +71,21 @@ def generate_property_id(url: str) -> str:
 
 
 def extract_bairro(titulo: str) -> str:
-    """Extrai o bairro do título do imóvel.
+    """Extrai o bairro do título do imóvel, ignorando acentos e variações comuns."""
+    if not titulo:
+        return "Outro"
 
-    Verifica case-insensitive se algum bairro da lista BAIRROS_DF
-    está presente no título do imóvel.
+    titulo_normalizado = normalize_text(titulo)
 
-    Returns:
-        Nome do bairro encontrado ou "Outro" se não identificado.
-    """
-    titulo_upper = titulo.upper()
     for bairro in BAIRROS_DF:
-        if bairro.upper() in titulo_upper:
+        bairro_normalizado = normalize_text(bairro)
+        if bairro_normalizado and bairro_normalizado in titulo_normalizado:
             return bairro
+
+    for alias, bairro_canonico in BAIRRO_ALIASES.items():
+        if normalize_text(alias) in titulo_normalizado:
+            return bairro_canonico
+
     return "Outro"
 
 
@@ -107,6 +141,7 @@ def extract_property_data(article_html: str) -> dict:
         # ======= CORREÇÃO 2: EXTRAÇÃO SEMÂNTICA =======
         quartos = "N/A"
         suites = "N/A"
+        banheiros = "N/A"
         vagas = "N/A"
         area_text = "N/A"
 
@@ -121,8 +156,15 @@ def extract_property_data(article_html: str) -> dict:
                 quartos = div.text.strip()
             elif "suíte" in text or "suite" in text:
                 suites = div.text.strip()
+            elif "banheiro" in text:
+                banheiros = div.text.strip()
             elif "vaga" in text or "garagem" in text:
                 vagas = div.text.strip()
+
+        if banheiros == "N/A":
+            banheiros_matches = re.findall(r"(\d+)\s*banheiro(?:s)?", description, flags=re.IGNORECASE)
+            if banheiros_matches:
+                banheiros = str(max(int(v) for v in banheiros_matches))
 
         # O bloco de fallback condicional (feature_divs[0], [1], [2]) foi deletado.
         # ==============================================
@@ -167,6 +209,7 @@ def extract_property_data(article_html: str) -> dict:
             "descricao": description,
             "quartos": quartos,
             "suites": suites,
+            "banheiros": banheiros,
             "vagas": vagas,
             "area": area_text,
             "bairro": bairro,
