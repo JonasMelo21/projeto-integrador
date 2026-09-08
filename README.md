@@ -172,44 +172,60 @@ rentmaster/
 │   │   │   └── api_client.dart     # Cliente HTTP
 │   │   └── models/                 # Modelos de dados
 │   ├── pubspec.yaml                # Dependências Dart/Flutter
-│   └── GOOGLE_SIGNIN_SETUP.md       # Setup Google Sign-In
+│   └── README.md                   # ⭐ Ver documentação do módulo
+│
+├── frontend/                        # 🖥️ Interface Web (React)
+│   ├── src/
+│   │   ├── app/
+│   │   ├── components/             # Páginas e componentes
+│   │   └── styles/
+│   ├── vite.config.ts
+│   ├── package.json
+│   └── README.md                   # ⭐ Ver documentação do módulo
 │
 ├── backend/                         # 🔌 API FastAPI
 │   ├── main.py                     # Entry point FastAPI
 │   ├── routes/
 │   │   ├── auth.py                 # POST /auth/google
-│   │   ├── imoveis.py              # GET /api/imoveis
-│   │   └── dimensoes.py            # Dimensões
+│   │   ├── imoveis.py              # GET /api/imoveis + ML inference
+│   │   └── dimensoes.py            # Dimensões e estatísticas
 │   ├── models.py                   # SQLAlchemy ORM
 │   ├── database.py                 # Configuração SQLite
 │   ├── Dockerfile                  # Container backend
-│   └── AUTH_SETUP.md               # Setup autenticação
+│   └── README.md                   # ⭐ Ver documentação do módulo
 │
 ├── data_pipeline/                  # 🔄 ETL (Bronze → Silver → Gold)
-│   ├── scraper_to_bronze/
-│   ├── silver_layer/
-│   └── gold_layer/
+│   ├── scraper/
+│   │   └── scraper_to_bronze.py    # Web scraping
+│   ├── medallion/
+│   │   ├── bronze_to_silver.py     # Limpeza e normalização
+│   │   └── silver_to_gold.py       # Feature engineering
+│   └── README.md                   # ⭐ Ver documentação do módulo
 │
 ├── ml_pipeline/                    # 🧠 Modelos de ML
-│   ├── preprocessing/
-│   ├── training/                   # Random Forest
-│   └── inference/
-│
-├── ai/                             # 🤖 Agentes IA
-│   ├── vanna_agent.py              # Chatbot RAG
-│   └── prompts/
+│   ├── data.py                     # Carregamento de dados
+│   ├── train_simple.py             # Treinamento Random Forest
+│   ├── evaluate.py                 # Avaliação
+│   ├── optimize.py                 # Otimização de hiperparâmetros
+│   ├── models/
+│   │   └── random_forest_optimized.joblib
+│   └── README.md                   # ⭐ Ver documentação do módulo
 │
 ├── data/                           # 📊 Armazenamento
+│   ├── bronze/                     # Dados brutos (scraper)
+│   ├── silver/                     # Dados limpos
+│   ├── gold/                       # Dados prontos para ML
 │   └── rental.db                   # SQLite
 │
 ├── docs/
 │   └── PI IV/
-│       └── nova_arquitetura.md     # Documentação completa
+│       └── nova_arquitetura.md     # Documentação técnica completa
 │
-├── docker-compose.yml              # Orquestração (backend only)
+├── docker-compose.yml              # Orquestração
+├── .dockerignore                   # ⭐ Otimização de build
 ├── README.md                       # Este arquivo
 ├── .env.example                    # Template de variáveis
-└── pyproject.toml                  # Dependências Python
+└── pyproject.toml                  # Dependências Python (grupos por módulo)
 ```
 
 ---
@@ -244,12 +260,93 @@ rentmaster/
 
 ---
 
+## 🏗️ Arquitetura por Módulo
+
+Cada módulo do projeto tem sua própria documentação detalhada. **Comece aqui se você vai codificar em um módulo específico:**
+
+### 📱 **Frontend Mobile** — [mobile/README.md](mobile/README.md)
+- Aplicativo Flutter (iOS/Android)
+- Autenticação Google OAuth
+- Listagem e detalhes de imóveis
+- **Como rodar**: `flutter run` ou Project IDX
+- **Stack**: Flutter, Dart, Google Sign-In
+
+### 🖥️ **Frontend Web** — [frontend/README.md](frontend/README.md)
+- Interface React + Vite
+- Componentes shadcn/ui
+- Integração com backend
+- **Como rodar**: `pnpm install && pnpm run dev`
+- **Stack**: React, TypeScript, Tailwind CSS
+
+### 🔌 **Backend API** — [backend/README.md](backend/README.md)
+- FastAPI + SQLAlchemy
+- Autenticação Google OAuth
+- **ML Inference em tempo real** (classifica preços)
+- **Como rodar**: `docker compose up -d backend`
+- **Stack**: Python, FastAPI, SQLAlchemy, SQLite
+- **Key Features**:
+  - Carrega modelo ML na inicialização
+  - Cada imóvel recebe classificação (Barato/Justo/Caro) em tempo real
+  - Fluxo completo de autenticação com JWT
+
+### 🔄 **Data Pipeline** — [data_pipeline/README.md](data_pipeline/README.md)
+- ETL com Medallion Architecture (Bronze → Silver → Gold)
+- Web scraping (BeautifulSoup + Playwright)
+- Limpeza e normalização de dados
+- Feature engineering
+- **Como rodar**: `uv sync --group data_pipeline && uv run python data_pipeline/scraper/...`
+- **Stack**: Python, Pandas, BeautifulSoup, Playwright
+
+### 🧠 **ML Pipeline** — [ml_pipeline/README.md](ml_pipeline/README.md)
+- Treinamento de modelos (Random Forest)
+- Avaliação e otimização de hiperparâmetros
+- Geração de modelos `.joblib`
+- **Como rodar**: `uv sync --group ml_pipeline && uv run python ml_pipeline/train_simple.py`
+- **Stack**: Python, Scikit-Learn, Pandas, NumPy
+- **Key Features**:
+  - Split temporal (não aleatório) para evitar leakage
+  - Classifica imóveis em 3 categorias de preço
+  - Modelo é carregado pelo backend para inferência
+
+---
+
 ## 📚 Documentação Adicional
 
-- **[Nova Arquitetura](docs/PI%20IV/nova_arquitetura.md)** - Diagrama completo da solução
-- **[Auth Setup (Backend)](backend/AUTH_SETUP.md)** - Instalação e configuração
-- **[Google Sign-In Setup (Mobile)](mobile/GOOGLE_SIGNIN_SETUP.md)** - Setup do OAuth
+- **[Nova Arquitetura Completa](docs/PI%20IV/nova_arquitetura.md)** - Diagrama e visão geral
+- **[Auth Setup (Backend)](backend/AUTH_SETUP.md)** - Instalação e configuração OAuth
 - **[Quick Start](QUICK_START.md)** - 3 minutos para começar
+
+---
+
+## 📦 Como Instalar Dependências (por Módulo)
+
+O projeto usa **grupos de dependência** do `uv`. Escolha apenas o que você precisa:
+
+```bash
+# ⭐ Backend (API FastAPI)
+uv sync --group backend
+
+# ⭐ Data Pipeline (Scraping + ETL)
+uv sync --group data_pipeline
+
+# ⭐ ML Pipeline (Treinamento de modelos)
+uv sync --group ml_pipeline
+
+# ⭐ Notebooks (Análise exploratória)
+uv sync --group notebooks
+
+# ⭐ Dev Tools (Linting, formatting)
+uv sync --group dev
+
+# Tudo junto (desenvolvimento completo)
+uv sync --group backend --group data_pipeline --group ml_pipeline --group notebooks --group dev
+```
+
+**Por que usar grupos?**
+- ✅ Build do Docker **50% mais rápido** (backend não inclui pandas/sklearn/playwright)
+- ✅ Menos dependências instaladas
+- ✅ Menos conflitos de versão
+- ✅ Melhor reprodutibilidade
 
 ---
 
@@ -271,7 +368,7 @@ docker compose exec backend python -m pytest
 # Remover volumes (limpar banco de dados)
 docker compose down -v
 
-# Rebuild imagem
+# Rebuild imagem (agora muito mais rápido com .dockerignore)
 docker compose build --no-cache backend
 ```
 

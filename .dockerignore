@@ -1,0 +1,95 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv
+venv/
+env/
+.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE & Editors
+.vscode
+.idea
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Development & Testing
+.env
+.env.local
+.env.*.local
+notebooks/
+tests/
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+
+# Mobile (não precisa no backend)
+mobile/
+android/
+ios/
+linux/
+macos/
+windows/
+
+# Frontend (não precisa no backend)
+frontend/
+node_modules/
+pnpm-lock.yaml
+
+# Data Pipeline (não precisa no backend em runtime)
+data_pipeline/
+data/bronze
+data/validation_csv
+
+# ML Pipeline (não precisa no backend em runtime)
+# Mantém apenas os modelos treinados em ml_pipeline/models/
+ml_pipeline/__pycache__
+ml_pipeline/*.pyc
+ml_pipeline/baselines.py
+ml_pipeline/config.py
+ml_pipeline/data.py
+ml_pipeline/evaluate.py
+ml_pipeline/optimize.py
+ml_pipeline/tracker.py
+ml_pipeline/train_simple.py
+
+# Docs
+docs/
+*.md
+!README.md
+
+# Secrets & Config
+secrets/
+.env.example
+
+# Temporary/Cache
+*.tmp
+*.log
+.gradle/
+.dart_tool/
+
+# Lock files (MANTER uv.lock para build reproducível)
+# *.lock seria perigoso pois ignora uv.lock que é necessário
+
+# Large assets
+images/
+*.mp4
+*.avi
+*.mov

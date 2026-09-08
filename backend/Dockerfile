@@ -3,28 +3,23 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 WORKDIR /app
 
-# Instala curl para o healthcheck (mantido do seu original)
+# Instala curl para o healthcheck
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Copia o TOML e o LOCK da raiz
+# Copia o TOML e o LOCK da raiz (deps serão cache-friendly)
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-install-project --no-dev
 
-# =====================================================================
-# CONFIGURAÇÃO DO PLAYWRIGHT
-# 1. Baixa os binários do Chromium usando o ambiente virtual do uv
-RUN uv run playwright install chromium
-# 2. Instala as dependências de SO (libglib, etc) exigidas pelo Chromium
-RUN uv run playwright install-deps chromium
-# =====================================================================
+# Instala apenas dependências do backend (sem dev, sem ml_pipeline, sem data_pipeline)
+RUN uv sync --frozen --no-install-project --group backend
 
-# Copia todo o resto do projeto
-COPY . .
+# Copia apenas o necessário (backend + ml_pipeline/models)
+COPY backend ./backend
+COPY ml_pipeline/models ./ml_pipeline/models
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=2 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 EXPOSE 8000
 
-# Executa o servidor puxando a main do backend
+# Executa o servidor
 CMD ["uv", "run", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
