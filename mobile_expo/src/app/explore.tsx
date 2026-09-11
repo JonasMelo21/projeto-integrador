@@ -1,180 +1,127 @@
-import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
-import { Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { ExternalLink } from '@/components/external-link';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Collapsible } from '@/components/ui/collapsible';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-
-export default function TabTwoScreen() {
-  const safeAreaInsets = useSafeAreaInsets();
-  const insets = {
-    ...safeAreaInsets,
-    bottom: safeAreaInsets.bottom + BottomTabInset + Spacing.three,
-  };
-  const theme = useTheme();
-
-  const contentPlatformStyle = Platform.select({
-    android: {
-      paddingTop: insets.top,
-      paddingLeft: insets.left,
-      paddingRight: insets.right,
-      paddingBottom: insets.bottom,
-    },
-    web: {
-      paddingTop: Spacing.six,
-      paddingBottom: Spacing.four,
-    },
-  });
-
+export default function ExploreScreen() {
   return (
-    <ScrollView
-      style={[styles.scrollView, { backgroundColor: theme.background }]}
-      contentInset={insets}
-      contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
-      <ThemedView style={styles.container}>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="subtitle">Explore</ThemedText>
-          <ThemedText style={styles.centerText} themeColor="textSecondary">
-            This starter app includes example{'\n'}code to help you get started.
-          </ThemedText>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* Cabeçalho */}
+        <View style={styles.header}>
+          <Text style={styles.eyebrow}>O MONEYBALL DO ALUGUEL</Text>
+          <Text style={styles.title}>RentMaster</Text>
+          <Text style={styles.description}>
+            Utilizamos Inteligência Artificial para combater a assimetria de informações no mercado imobiliário do DF. Descubra se um aluguel é justo, caro ou uma verdadeira barganha.
+          </Text>
+        </View>
 
-          <ExternalLink href="https://docs.expo.dev" asChild>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
-              <ThemedView type="backgroundElement" style={styles.linkButton}>
-                <ThemedText type="link">Expo documentation</ThemedText>
-                <SymbolView
-                  tintColor={theme.text}
-                  name={{ ios: 'arrow.up.right.square', android: 'link', web: 'link' }}
-                  size={12}
-                />
-              </ThemedView>
-            </Pressable>
-          </ExternalLink>
-        </ThemedView>
+        {/* Cards de Tecnologia */}
+        <View style={styles.cardsWrapper}>
+          <View style={styles.card}>
+            <View style={styles.iconContainer}>
+              <MaterialCommunityIcons name="database-search" size={28} color="#60a5fa" />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardTitle}>Pipeline de Dados</Text>
+              <Text style={styles.cardText}>
+                Arquitetura Medallion processando e refinando milhares de imóveis em tempo real.
+              </Text>
+            </View>
+          </View>
 
-        <ThemedView style={styles.sectionsWrapper}>
-          <Collapsible title="File-based routing">
-            <ThemedText type="small">
-              This app has two screens: <ThemedText type="code">src/app/index.tsx</ThemedText> and{' '}
-              <ThemedText type="code">src/app/explore.tsx</ThemedText>
-            </ThemedText>
-            <ThemedText type="small">
-              The layout file in <ThemedText type="code">src/app/_layout.tsx</ThemedText> sets up
-              the tab navigator.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/router/introduction">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
+          <View style={styles.card}>
+            <View style={styles.iconContainer}>
+              <MaterialCommunityIcons name="brain" size={28} color="#60a5fa" />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardTitle}>Machine Learning</Text>
+              <Text style={styles.cardText}>
+                Modelos preditivos Random Forest que identificam anomalias e garantem uma precificação justa.
+              </Text>
+            </View>
+          </View>
 
-          <Collapsible title="Android, iOS, and web support">
-            <ThemedView type="backgroundElement" style={styles.collapsibleContent}>
-              <ThemedText type="small">
-                You can open this project on Android, iOS, and the web. To open the web version,
-                press <ThemedText type="smallBold">w</ThemedText> in the terminal running this
-                project.
-              </ThemedText>
-              <Image
-                source={require('@/assets/images/tutorial-web.png')}
-                style={styles.imageTutorial}
-              />
-            </ThemedView>
-          </Collapsible>
-
-          <Collapsible title="Images">
-            <ThemedText type="small">
-              For static images, you can use the <ThemedText type="code">@2x</ThemedText> and{' '}
-              <ThemedText type="code">@3x</ThemedText> suffixes to provide files for different
-              screen densities.
-            </ThemedText>
-            <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
-            <ExternalLink href="https://reactnative.dev/docs/images">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Light and dark mode components">
-            <ThemedText type="small">
-              This template has light and dark mode support. The{' '}
-              <ThemedText type="code">useColorScheme()</ThemedText> hook lets you inspect what the
-              user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-            </ThemedText>
-            <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-              <ThemedText type="linkPrimary">Learn more</ThemedText>
-            </ExternalLink>
-          </Collapsible>
-
-          <Collapsible title="Animations">
-            <ThemedText type="small">
-              This template includes an example of an animated component. The{' '}
-              <ThemedText type="code">src/components/ui/collapsible.tsx</ThemedText> component uses
-              the powerful <ThemedText type="code">react-native-reanimated</ThemedText> library to
-              animate opening this hint.
-            </ThemedText>
-          </Collapsible>
-        </ThemedView>
-        {Platform.OS === 'web' && <WebBadge />}
-      </ThemedView>
-    </ScrollView>
+          <View style={styles.card}>
+            <View style={styles.iconContainer}>
+              <MaterialCommunityIcons name="robot-outline" size={28} color="#60a5fa" />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardTitle}>Assistente Vanna AI</Text>
+              <Text style={styles.cardText}>
+                Inteligência conversacional integrada para analisar o mercado através de linguagem natural.
+              </Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
+  safeArea: {
     flex: 1,
-  },
-  contentContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    backgroundColor: '#121418',
   },
   container: {
-    maxWidth: MaxContentWidth,
-    flexGrow: 1,
+    padding: 24,
+    paddingBottom: 40,
   },
-  titleContainer: {
-    gap: Spacing.three,
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.six,
+  header: {
+    marginBottom: 32,
+    marginTop: 20,
   },
-  centerText: {
-    textAlign: 'center',
+  eyebrow: {
+    color: '#60a5fa',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginBottom: 8,
   },
-  pressed: {
-    opacity: 0.7,
+  title: {
+    color: '#f8fafc',
+    fontSize: 40,
+    fontWeight: '800',
+    marginBottom: 16,
   },
-  linkButton: {
+  description: {
+    color: '#94a3b8',
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  cardsWrapper: {
+    gap: 16,
+  },
+  card: {
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+    padding: 20,
     flexDirection: 'row',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Spacing.five,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  iconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: '#0f172a',
     justifyContent: 'center',
-    gap: Spacing.one,
     alignItems: 'center',
+    marginRight: 16,
   },
-  sectionsWrapper: {
-    gap: Spacing.five,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
+  cardContent: {
+    flex: 1,
   },
-  collapsibleContent: {
-    alignItems: 'center',
+  cardTitle: {
+    color: '#f8fafc',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 4,
   },
-  imageTutorial: {
-    width: '100%',
-    aspectRatio: 296 / 171,
-    borderRadius: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  imageReact: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
+  cardText: {
+    color: '#94a3b8',
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
