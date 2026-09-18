@@ -28,3 +28,7 @@ Percebi que os dados estão sujos e precisarei decidir como lidar com esses dado
  - 50% dos alugueis custam menos de 6000 reais
  - 75% dos alugueis custa menos de 15000 reais
  - há imoveis custando 610 000 reais (investigar se não foi erro na etapa de raspagem)
+
+## 17/09 O que será feito com esses dados
+- transformação log pra balancear outliers em area
+- escolher um test dataset com amostras representativas das areas dos imoveis

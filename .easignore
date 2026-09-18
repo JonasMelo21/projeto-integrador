@@ -1,0 +1,51 @@
+# Claude Code & Agents
+.agents
+.claude
+.claude-code
+skills-lock.json
+
+# Git
+.git
+.gitignore
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build artifacts
+dist/
+build/
+.expo/
+.next/
+
+# Environment
+.env
+.env.*.local
+.env.local
+.env.production.local
+.env.development.local
+
+# IDE & OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Project directories to ignore
+backend/
+frontend/
+data_pipeline/
+ml_pipeline/
+docs/
+data/
+scripts/
+
+# Misc
+*.md
+README*
+LICENSE
+CHANGELOG*
+.npmrc
+.editorconfig
