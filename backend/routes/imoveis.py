@@ -10,6 +10,7 @@ from backend.database import get_db
 from backend.models import FactImovel, DimImobiliaria, DimLocal
 from backend.schemas import FactImovelSchema, FactImovelListSchema
 from typing import List
+from data_pipeline.medallion.bronze_to_silver import extract_tipo_imovel
 
 router = APIRouter()
 
@@ -18,6 +19,7 @@ router = APIRouter()
 # ==========================================
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 MODEL_PATH = PROJECT_ROOT / "ml_pipeline" / "models" / "random_forest_optimized.joblib"
+STATS_PATH = PROJECT_ROOT / "data" / "gold" / "dim_bairros_estatisticas.parquet"
 
 # Carrega o modelo na memória global da API
 try:
@@ -26,6 +28,11 @@ try:
 except Exception as e:
     print(f"⚠️ Aviso: Modelo de ML não encontrado. As classificações serão nulas. Erro: {e}")
     rf_model = None
+
+try:
+    area_statistics = pd.read_parquet(STATS_PATH)
+except Exception:
+    area_statistics = pd.DataFrame()
 
 # Mapeamento de saída do modelo
 PRICE_CLASSES = {0: "Barato", 1: "Preço Justo", 2: "Caro"}
@@ -40,26 +47,44 @@ def predict_classificacao(imovel_dict: dict) -> str | None:
         imobiliaria_nome = str(imovel_dict.get("imobiliaria_nome") or "UNKNOWN").strip().lower()
         imob_hash = int(hashlib.md5(imobiliaria_nome.encode('utf-8')).hexdigest(), 16) % 1024
 
-        # 2. Categorização de Área (Heurística Simplificada para Real-time)
-        # Nota de Eng. ML: O ideal num sistema maduro é importar as medianas/MADs do treino.
+        # 2. Reproduz a categorizacao de area ajustada no treino.
         area = float(imovel_dict.get("area_m2") or 0)
-        if area < 45:
+        titulo = imovel_dict.get("titulo") or ""
+        tipo_imovel = imovel_dict.get("tipo_imovel") or extract_tipo_imovel(
+            imovel_dict.get("url"), titulo
+        )
+        bairro = str(imovel_dict.get("local_bairro") or "Outro")
+        matching_stats = area_statistics.loc[
+            (area_statistics["bairro"] == bairro)
+            & (area_statistics["tipo_imovel"] == tipo_imovel)
+        ] if {"bairro", "tipo_imovel"}.issubset(area_statistics.columns) else pd.DataFrame()
+        if not matching_stats.empty:
+            area_med = float(matching_stats.iloc[0]["area_mediana_m2"])
+            area_mad = float(matching_stats.iloc[0]["area_mad"])
+            if area < area_med - area_mad:
+                area_cat = "Compacto"
+            elif area > area_med + area_mad:
+                area_cat = "Amplo"
+            else:
+                area_cat = "Padrao"
+        elif area < 45:
             area_cat = "Compacto"
         elif area > 120:
             area_cat = "Amplo"
         else:
             area_cat = "Padrao"
 
-        bairro = str(imovel_dict.get("local_bairro") or "Outro")
         bairro_area_cross = f"{bairro}_{area_cat}"
 
         # 3. Montar o DataFrame com exata assinatura que o modelo espera
         # Lembrando que usamos 'banheiros' na BD para mapear as 'suites' do scraper
         features = pd.DataFrame([{
             "bairro_area_cross": bairro_area_cross,
+            "tipo_imovel": tipo_imovel,
             "imobiliaria_hash": imob_hash,
+            "area_m2": area,
             "quartos": int(imovel_dict.get("quartos") or 0),
-            "suites": int(imovel_dict.get("banheiros") or 0), 
+            "suites": int(imovel_dict.get("suites") or 0),
             "vagas": int(imovel_dict.get("vagas") or 0)
         }])
 
@@ -142,8 +167,9 @@ async def get_imovel(
     # 3. Monta o dicionário para a inteligência artificial
     imovel_dict = {
         "area_m2": imovel.area_m2,
+        "titulo": imovel.titulo,
+        "url": imovel.url,
         "quartos": imovel.quartos,
-        "banheiros": imovel.banheiros,
         "vagas": imovel.vagas,
         "imobiliaria_nome": imobiliaria.nome_empresa if imobiliaria else "UNKNOWN",
         "local_bairro": local.bairro if local else "Outro"
@@ -176,8 +202,9 @@ async def get_imovel_by_hex(
         
     imovel_dict = {
         "area_m2": imovel.area_m2,
+        "titulo": imovel.titulo,
+        "url": imovel.url,
         "quartos": imovel.quartos,
-        "banheiros": imovel.banheiros,
         "vagas": imovel.vagas,
         "imobiliaria_nome": imobiliaria.nome_empresa if imobiliaria else "UNKNOWN",
         "local_bairro": local.bairro if local else "Outro"

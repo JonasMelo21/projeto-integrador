@@ -15,21 +15,21 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 
-from ml_pipeline.data import FEATURE_COLUMNS, TARGET_COLUMN, load_gold_fact, split_time_based
+from ml_pipeline.data import FEATURE_COLUMNS, TARGET_COLUMN, load_gold_splits
 
 PROJECT_ROOT = Path(__file__).parent.parent
 MODELS_DIR = PROJECT_ROOT / "ml_pipeline" / "models"
 
 def load_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Carrega a fato Gold e cria os splits temporais para o treinamento."""
-    return split_time_based(load_gold_fact())
+    return load_gold_splits()
 
 def build_pipeline() -> Pipeline:
     """
     Constrói a arquitetura do modelo unindo pré-processamento e o algoritmo.
     Isso blinda a esteira contra Data Leakage.
     """
-    cat_features = ["bairro_area_cross"]
+    cat_features = ["bairro_area_cross", "tipo_imovel"]
     num_features = [column for column in FEATURE_COLUMNS if column not in cat_features]
 
     preprocessor = ColumnTransformer(

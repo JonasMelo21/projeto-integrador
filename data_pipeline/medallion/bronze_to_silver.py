@@ -18,8 +18,33 @@ BRONZE_DIR = PROJECT_ROOT / "data" / "bronze"
 SILVER_DIR = PROJECT_ROOT / "data" / "silver"
 SILVER_FILE = SILVER_DIR / "imoveis_limpos.parquet"
 
-# Mantém a URL do imóvel na Silver para debug e rastreio posterior.
-COLS_DROP = ["imagem", "imagens", "id_imovel"]
+# Mantém a URL e imagem do imóvel na Silver para debug e rastreio posterior.
+COLS_DROP = ["imagens", "id_imovel", "banheiros"]
+
+TIPO_PATTERNS = [
+    ("apartamento", r"\b(apartamento|apto|kitnet|flat)\b"),
+    ("galpao", r"\b(galpao|galp[aã]o|barracao|barrac[aã]o)\b"),
+    ("lote", r"\b(lote|terreno)\b"),
+    ("sala", r"\b(sala|conjunto comercial|consultorio|escritorio)\b"),
+    ("casa", r"\b(casa|sobrado|chacara|ch[aá]cara)\b"),
+]
+RESIDENTIAL_TYPES = {"apartamento", "casa", "sala", "outro"}
+
+
+def normalize_for_matching(value: object) -> str:
+    """Normaliza texto para as regras de classificacao sem acentos."""
+    text = str(value or "").lower()
+    replacements = str.maketrans({"á": "a", "ã": "a", "â": "a", "é": "e", "ê": "e", "í": "i", "ó": "o", "ô": "o", "õ": "o", "ú": "u", "ç": "c"})
+    return re.sub(r"\s+", " ", text.translate(replacements)).strip()
+
+
+def extract_tipo_imovel(url: object, titulo: object) -> str:
+    """Extrai o tipo do imovel da URL e do titulo, com fallback auditavel."""
+    text = normalize_for_matching(f"{url or ''} {titulo or ''}")
+    for tipo, pattern in TIPO_PATTERNS:
+        if re.search(pattern, text, flags=re.IGNORECASE):
+            return tipo
+    return "outro"
 
 
 def load_bronze() -> pd.DataFrame:
@@ -64,28 +89,29 @@ def deduplicate(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def parse_preco(series: pd.Series) -> pd.Series:
-    """Remove 'R$', pontos e espaços; converte para float."""
-    return (
-        series.astype(str)
-        .str.replace(r"R\$", "", regex=True)
-        .str.replace(r"\.", "", regex=True)
-        .str.replace(",", ".", regex=False)
-        .str.strip()
-        .pipe(pd.to_numeric, errors="coerce")
-        .astype(float)
-    )
+    """Converte numeros brasileiros sem confundir milhar e decimal."""
+    return series.map(parse_number).astype(float)
 
 
 def parse_area(series: pd.Series) -> pd.Series:
-    """Extrai número de strings como '560 m²'; converte para float."""
-    return (
-        series.astype(str)
-        .str.extract(r"([\d.,]+)", expand=False)
-        .str.replace(".", "", regex=False)
-        .str.replace(",", ".", regex=False)
-        .pipe(pd.to_numeric, errors="coerce")
-        .astype(float)
-    )
+    """Extrai e converte areas como '560 m2', '1.234 m2' ou '1,5 m2'."""
+    return series.map(lambda value: parse_number(re.search(r"[\d.,]+", str(value or "")).group() if re.search(r"[\d.,]+", str(value or "")) else None)).astype(float)
+
+
+def parse_number(value: object) -> float | None:
+    text = str(value or "").replace("R$", "").replace(" ", "").strip()
+    if not text or text.lower() in {"n/a", "nan", "none"}:
+        return None
+    if "," in text and "." in text:
+        text = text.replace(".", "").replace(",", ".")
+    elif "," in text:
+        text = text.replace(",", ".")
+    elif text.count(".") == 1 and len(text.rsplit(".", 1)[1]) == 3:
+        text = text.replace(".", "")
+    try:
+        return float(text)
+    except ValueError:
+        return None
 
 
 def parse_inteiro(series: pd.Series) -> pd.Series:
@@ -117,6 +143,42 @@ def clean_text(series: pd.Series) -> pd.Series:
     )
 
 
+def apply_sanity_flags(df: pd.DataFrame) -> pd.DataFrame:
+    """Marca anomalias sem remover linhas da base principal."""
+    df = df.copy()
+    df["flag_suspeito"] = False
+    reasons = pd.Series("", index=df.index, dtype="object")
+
+    def add_reason(mask: pd.Series, reason: str) -> None:
+        nonlocal reasons
+        reasons = reasons.where(~mask, reasons.where(reasons.eq(""), reasons + "; ") + reason)
+        df.loc[mask, "flag_suspeito"] = True
+
+    add_reason(df["preco"].isna() | (df["preco"] <= 0), "preco ausente ou <= 0")
+    add_reason(df["area_m2"].isna() | (df["area_m2"] <= 0), "area ausente ou <= 0")
+    residential = df["tipo_imovel"].isin(RESIDENTIAL_TYPES)
+    add_reason(residential & (df["area_m2"] < 10), "area residencial < 10 m2")
+    add_reason(residential & (df["area_m2"] > 2000), "area residencial > 2000 m2")
+    add_reason((df["tipo_imovel"].isin({"galpao", "lote"})) & (df["area_m2"] > 20000), "area nao residencial > 20000 m2")
+    add_reason(df["vagas"].notna() & (df["vagas"] > 20), "vagas > 20")
+    add_reason(df["preco"].notna() & ((df["preco"] < 100) | (df["preco"] > 200000)), "preco fora de [100, 200000]")
+
+    df["motivo_suspeita"] = reasons
+    return df
+
+
+def impute_grouped_medians(df: pd.DataFrame) -> pd.DataFrame:
+    """Preenche atributos numericos por bairro e tipo, com fallback global."""
+    df = df.copy()
+    group_columns = ["bairro", "tipo_imovel"]
+    for column in ["quartos", "suites", "vagas"]:
+        grouped = df.groupby(group_columns, dropna=False)[column].transform("median")
+        fallback = df[column].median()
+        values = df[column].astype("float64").fillna(grouped).fillna(fallback)
+        df[column] = values.round().astype("Int64")
+    return df
+
+
 def transform(df: pd.DataFrame) -> pd.DataFrame:
     """Aplica toda a limpeza e feature engineering."""
     # Descartar colunas desnecessárias
@@ -129,12 +191,18 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
     if "area" in df.columns:
         df["area_m2"] = parse_area(df["area"]).astype(float)
         df = df.drop(columns=["area"])
-    for col in ["quartos", "suites", "banheiros", "vagas"]:
+    for col in ["quartos", "suites", "vagas"]:
         if col in df.columns:
             df[col] = parse_inteiro(df[col])
-    for col in ["titulo", "descricao"]:
+    for col in ["titulo", "descricao", "descricao_completa"]:
         if col in df.columns:
             df[col] = clean_text(df[col])
+
+    df["tipo_imovel"] = df.apply(
+        lambda row: extract_tipo_imovel(row.get("url"), row.get("titulo")), axis=1
+    )
+    df = apply_sanity_flags(df)
+    df = impute_grouped_medians(df)
 
     # 3. Engenharia de Features (Feature Engineering)
     
@@ -151,13 +219,9 @@ def transform(df: pd.DataFrame) -> pd.DataFrame:
     if "descricao" in df.columns:
         df["descricao_len"] = df["descricao"].astype(str).apply(len)
         
-    # Campos Nulos Padrões
-    if "banheiros" not in df.columns:
-        df["banheiros"] = None
-        
     # Metadados do Pipeline
     df["ingestion_datetime"] = time.time() * 1000
-    df["pipeline_version"] = "1.0"
+    df["pipeline_version"] = "2.0"
 
     print(f"✓ Transformações e features criadas. Colunas finais: {list(df.columns)}")
     return df

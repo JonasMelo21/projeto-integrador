@@ -10,7 +10,7 @@ import pandas as pd
 import joblib
 from sklearn.metrics import accuracy_score, f1_score, classification_report, confusion_matrix
 
-from ml_pipeline.data import FEATURE_COLUMNS, TARGET_COLUMN, load_gold_fact, split_time_based
+from ml_pipeline.data import FEATURE_COLUMNS, TARGET_COLUMN, load_gold_splits
 
 # Caminhos
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -26,7 +26,7 @@ def main():
         print("❌ Erro: Conjunto de teste ou modelo otimizado não encontrados.")
         return
 
-    _, _, test_df = split_time_based(load_gold_fact())
+    _, _, test_df = load_gold_splits()
     X_test = test_df[FEATURE_COLUMNS]
     y_test = test_df[TARGET_COLUMN]
 

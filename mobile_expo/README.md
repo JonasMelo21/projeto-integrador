@@ -1,56 +1,111 @@
-# Welcome to your Expo app 👋
+# Mobile Expo — RentMaster
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App mobile Expo (React Native) que conecta usuários ao backend para analisar preços de aluguel em tempo real.
 
-## Get started
+## 🎯 Objetivo
 
-1. Install dependencies
+Interface mobile nativa para iOS/Android com:
+- Login via Google OAuth
+- Listagem de imóveis com classificação ML
+- Busca e filtros por bairro/preço/tamanho
+- Interface responsiva e performática
 
-   ```bash
-   npm install
-   ```
+## 📁 Estrutura
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+src/
+├── screens/          # Telas principais
+├── components/       # Componentes reutilizáveis
+├── config/          # Configurações
+│   └── api_client.ts # Cliente HTTP para backend
+├── models/          # Tipos TypeScript e interfaces
+├── hooks/           # Custom hooks (tema, cores, etc)
+├── lib/             # Integrações externas
+│   └── supabase.ts  # Cliente Supabase
+└── constants/       # Constantes (paleta de cores, etc)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🚀 Setup Rápido
 
-### Other setup steps
+```bash
+# Instalar dependências
+npm install
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+# Desenvolvimento local
+npm run web         # Usar Expo Go web
+npx expo start      # Escanear QR code no Expo Go (iOS/Android)
 
-## Learn more
+# Build para produção
+npm run build:ios
+npm run build:android
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## 🔑 Arquivos Principais
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+| Arquivo | Função |
+|---------|--------|
+| `config/api_client.ts` | Cliente HTTP (chamadas ao backend) |
+| `lib/supabase.ts` | Autenticação e dados (Supabase) |
+| `hooks/use-theme.ts` | Provider de tema (claro/escuro) |
+| `hooks/use-color-scheme.ts` | Detecção de esquema de cores |
+| `constants/theme.ts` | Paleta de cores e estilos |
 
-## Join the community
+## 🔐 Autenticação
 
-Join our community of developers creating universal apps.
+```typescript
+// Fluxo OAuth
+1. Usuário toca "Continuar com Google"
+2. Google Sign-In abre dialog nativo
+3. Backend valida token JWT
+4. Retorna sessionToken
+5. Store local salva token
+6. Requisições futuras incluem: Authorization: Bearer {token}
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 📡 Integrações
+
+| Serviço | Função |
+|---------|--------|
+| **Google OAuth** | Autenticação nativa |
+| **Backend FastAPI** | API de imóveis + ML inference |
+| **Supabase** | Autenticação alternativa e realtime |
+
+## 🎨 Temas e Cores
+
+O app suporta modo claro/escuro automático:
+- Detecta preferência do sistema com `use-color-scheme`
+- Aplica tema via `useTheme()` hook
+- Cores definidas em `constants/theme.ts`
+
+## 🔧 O que Contribuir
+
+| Tarefa | Arquivo |
+|--------|---------|
+| Adicionar tela | `src/screens/` |
+| Novo componente | `src/components/` |
+| Chamada API | `config/api_client.ts` |
+| Ajustar tema | `constants/theme.ts` |
+| Custom hook | `src/hooks/` |
+
+## 🚨 Pontos Importantes
+
+- 📱 **Expo Web**: Não suporta Google Sign-In nativo (usar Supabase em web)
+- 🔑 **Token na memória**: sessionToken perdido ao fechar app (melhoria futura: async storage)
+- 🎨 **Theme provider**: Sempre envolver app com `ThemeProvider`
+- 📡 **CORS**: Backend deve permitir requisições do mobile
+
+## 📚 Documentação Expo
+
+Para updates e features, consulte versão exata em `AGENTS.md`:
+```
+https://docs.expo.dev/versions/vXX.X.X/
+```
+
+## 🐛 Troubleshooting
+
+| Problema | Solução |
+|----------|---------|
+| "Cannot find module" | `npm install` |
+| OAuth não funciona em web | Usar Supabase Auth em web |
+| Theme não aplicando | Verificar `ThemeProvider` no root |
+| API retorna CORS error | Adicionar origem mobile no backend |

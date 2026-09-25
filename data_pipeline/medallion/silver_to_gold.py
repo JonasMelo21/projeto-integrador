@@ -26,6 +26,12 @@ GOLD_DIR = PROJECT_ROOT / "data" / "gold"
 SILVER_FILE = SILVER_DIR / "imoveis_limpos.parquet"
 
 HASH_BUCKETS = 1024
+STAT_GROUP_COLUMNS = ["bairro", "tipo_imovel"]
+ML_SPLIT_PATHS = {
+    "train": GOLD_DIR / "ml_train.parquet",
+    "valid": GOLD_DIR / "ml_valid.parquet",
+    "test": GOLD_DIR / "ml_test.parquet",
+}
 
 
 def load_silver() -> pd.DataFrame:
@@ -111,13 +117,14 @@ def build_dim_bairros(df: pd.DataFrame) -> pd.DataFrame:
     return dim
 
 
-def build_dim_bairros_estatisticas(df: pd.DataFrame) -> pd.DataFrame:
-    """Cria a dimensão de estatísticas por bairro."""
+def calculate_statistics(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, float]]:
+    """Ajusta medianas/MADs apenas sobre registros nao suspeitos."""
     def calc_mad(x: pd.Series) -> float:
         return (x - x.median()).abs().median()
 
+    clean_df = df.loc[~df["flag_suspeito"].fillna(False)].copy()
     stats = (
-        df.groupby("bairro", dropna=False)
+        clean_df.groupby(STAT_GROUP_COLUMNS, dropna=False)
         .agg(
             preco_mediano_por_m2=("preco_por_m2", "median"),
             preco_mad=("preco_por_m2", calc_mad),
@@ -129,12 +136,29 @@ def build_dim_bairros_estatisticas(df: pd.DataFrame) -> pd.DataFrame:
 
     stats["preco_mad"] = stats["preco_mad"].replace(0, 1.0)
     stats["area_mad"] = stats["area_mad"].replace(0, 1.0)
+    fallback = {
+        "preco_med": clean_df["preco_por_m2"].median(),
+        "preco_mad": calc_mad(clean_df["preco_por_m2"]) or 1.0,
+        "area_med": clean_df["area_m2"].median(),
+        "area_mad": calc_mad(clean_df["area_m2"]) or 1.0,
+    }
+    return stats, fallback
+
+
+def build_dim_bairros_estatisticas(df: pd.DataFrame) -> pd.DataFrame:
+    """Cria estatisticas descritivas por bairro e tipo, sem suspeitos."""
+    stats, _ = calculate_statistics(df)
+    stats = stats.rename(columns={
+        "preco_mediano_por_m2": "preco_mediano_por_m2",
+        "area_mediana_m2": "area_mediana_m2",
+    })
 
     dim_bairros = build_dim_bairros(df)
     stats = stats.merge(dim_bairros[["id_bairro", "bairro"]], on="bairro", how="left")
     stats = stats[[
         "id_bairro",
         "bairro",
+        "tipo_imovel",
         "preco_mediano_por_m2",
         "preco_mad",
         "area_mediana_m2",
@@ -143,35 +167,26 @@ def build_dim_bairros_estatisticas(df: pd.DataFrame) -> pd.DataFrame:
     return stats
 
 
-def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Cria atributos de negócio e ML sem serializar um dataset único em Gold."""
+def engineer_features(
+    df: pd.DataFrame,
+    statistics: tuple[pd.DataFrame, dict[str, float]] | None = None,
+) -> pd.DataFrame:
+    """Aplica estatisticas ajustadas no treino a qualquer split."""
     df = df.copy()
     df["imobiliaria_hash"] = df["imobiliaria"].apply(lambda x: hash_categorical(x, HASH_BUCKETS))
 
-    def calc_mad(x: pd.Series) -> float:
-        return (x - x.median()).abs().median()
-
-    bairro_stats = df.groupby("bairro", dropna=False).agg(
-        preco_med=("preco_por_m2", "median"),
-        preco_mad=("preco_por_m2", calc_mad),
-        area_med=("area_m2", "median"),
-        area_mad=("area_m2", calc_mad),
-    ).reset_index()
-
-    bairro_stats["preco_mad"] = bairro_stats["preco_mad"].replace(0, 1.0)
-    bairro_stats["area_mad"] = bairro_stats["area_mad"].replace(0, 1.0)
-
-    merged = df.merge(bairro_stats, on="bairro", how="left")
-
-    global_preco_med = merged["preco_por_m2"].median()
-    global_preco_mad = calc_mad(merged["preco_por_m2"]) or 1.0
-    global_area_med = merged["area_m2"].median()
-    global_area_mad = calc_mad(merged["area_m2"]) or 1.0
-
-    merged["preco_med"] = merged["preco_med"].fillna(global_preco_med)
-    merged["preco_mad"] = merged["preco_mad"].fillna(global_preco_mad)
-    merged["area_med"] = merged["area_med"].fillna(global_area_med)
-    merged["area_mad"] = merged["area_mad"].fillna(global_area_mad)
+    if statistics is None:
+        statistics = calculate_statistics(df)
+    bairro_stats, fallback = statistics
+    bairro_stats = bairro_stats.rename(columns={
+        "preco_mediano_por_m2": "preco_med",
+        "area_mediana_m2": "area_med",
+    })
+    merged = df.merge(bairro_stats, on=STAT_GROUP_COLUMNS, how="left")
+    merged["preco_med"] = merged["preco_med"].fillna(fallback["preco_med"])
+    merged["preco_mad"] = merged["preco_mad"].fillna(fallback["preco_mad"])
+    merged["area_med"] = merged["area_med"].fillna(fallback["area_med"])
+    merged["area_mad"] = merged["area_mad"].fillna(fallback["area_mad"])
 
     cond_preco = [
         merged["preco_por_m2"] < (merged["preco_med"] - merged["preco_mad"]),
@@ -186,7 +201,6 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     merged["area_cat"] = np.select(cond_area, ["Compacto", "Amplo"], default="Padrao")
     merged["bairro_area_cross"] = merged["bairro"].astype(str) + "_" + merged["area_cat"].astype(str)
 
-    print("✓ Feature engineering aplicada sobre a base Gold antes do split final.")
     return merged
 
 
@@ -226,25 +240,27 @@ def build_fact_imoveis_gold(df: pd.DataFrame) -> pd.DataFrame:
     fact["id_bairro_fk"] = fact["id_bairro_fk"].astype("Int64")
     fact["preco"] = pd.to_numeric(fact["preco"], errors="coerce").astype("float64")
     fact["area_m2"] = pd.to_numeric(fact["area_m2"], errors="coerce").astype("float64")
-    for col in ["quartos", "suites", "banheiros", "vagas"]:
+    for col in ["quartos", "suites", "vagas"]:
         if col in fact.columns:
             fact[col] = pd.to_numeric(fact[col], errors="coerce").astype("Int64")
 
-    # Mantém a URL do imóvel no fato Gold para facilitar debug e validação.
+    # Mantém a URL do imóvel e imagem no fato Gold para facilitar debug e validação.
     columns_order = [
         "id_imovel",
         "id_imobiliaria_fk",
         "id_bairro_fk",
         "titulo",
         "url",
+        "imagem",
+        "descricao_completa",
         "bairro",
+        "tipo_imovel",
         "cidade",
         "uf",
         "preco",
         "area_m2",
         "quartos",
         "suites",
-        "banheiros",
         "vagas",
         "preco_por_m2",
         "imobiliaria",
@@ -256,6 +272,8 @@ def build_fact_imoveis_gold(df: pd.DataFrame) -> pd.DataFrame:
         "target_preco",
         "area_cat",
         "bairro_area_cross",
+        "flag_suspeito",
+        "motivo_suspeita",
         "data_extracao",
     ]
 
@@ -277,6 +295,13 @@ def save_fact_gold(fact_df: pd.DataFrame) -> None:
     print(f"   Registros: {len(fact_df)} | Colunas: {len(fact_df.columns)}")
 
 
+def save_ml_splits(splits: dict[str, pd.DataFrame]) -> None:
+    GOLD_DIR.mkdir(parents=True, exist_ok=True)
+    for name, split_df in splits.items():
+        split_df.to_parquet(ML_SPLIT_PATHS[name], index=False)
+        print(f"✅ Split ML salvo ({name}): {len(split_df)} registros")
+
+
 def main() -> None:
     print("=" * 70)
     print("  Silver → Gold: Dimensões + Tabela Fato")
@@ -284,16 +309,24 @@ def main() -> None:
 
     df = load_silver()
     df = deduplicate_defensive(df)
-    df = engineer_features(df)
+    train_raw, valid_raw, test_raw = time_based_split(df)
+    train_stats = calculate_statistics(train_raw)
+    splits = {
+        "train": engineer_features(train_raw, train_stats),
+        "valid": engineer_features(valid_raw, train_stats),
+        "test": engineer_features(test_raw, train_stats),
+    }
+    enriched_df = pd.concat(splits.values(), ignore_index=True)
 
-    dim_imobiliarias = build_dim_imobiliarias(df)
-    dim_bairros = build_dim_bairros(df)
-    dim_bairros_stats = build_dim_bairros_estatisticas(df)
+    dim_imobiliarias = build_dim_imobiliarias(enriched_df)
+    dim_bairros = build_dim_bairros(enriched_df)
+    dim_bairros_stats = build_dim_bairros_estatisticas(train_raw)
 
     save_dimensions(dim_imobiliarias, dim_bairros, dim_bairros_stats)
 
-    fact_df = build_fact_imoveis_gold(df)
+    fact_df = build_fact_imoveis_gold(enriched_df)
     save_fact_gold(fact_df)
+    save_ml_splits(splits)
 
 
 if __name__ == "__main__":

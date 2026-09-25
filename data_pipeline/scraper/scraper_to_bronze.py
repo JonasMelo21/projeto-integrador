@@ -111,9 +111,14 @@ def extract_property_data(article_html: str) -> dict:
         title_elem = soup.find("h2", class_="ellipse-text body-medium accent-color bold")
         title = title_elem.text.strip() if title_elem else "N/A"
 
-        # URL do imóvel
+        # URL do imóvel (construir URL completa)
         link_elem = soup.find("a", class_="imovel-card")
-        url = link_elem.get("href", "N/A") if link_elem else "N/A"
+        href = link_elem.get("href", "N/A") if link_elem else "N/A"
+        # Se for um path relativo, adicionar o domínio base
+        if href != "N/A" and not href.startswith("http"):
+            url = f"https://www.dfimoveis.com.br{href}"
+        else:
+            url = href
 
         # ======= CORREÇÃO 1: SANITIZAÇÃO DO PREÇO =======
         price_elem = soup.find("p", {"itemprop": "price"})
@@ -136,7 +141,8 @@ def extract_property_data(article_html: str) -> dict:
 
         # Descrição
         desc_elem = soup.find("p", {"itemprop": "description"})
-        description = desc_elem.text.strip()[:200] if desc_elem else "N/A"
+        descricao_completa = desc_elem.text.strip() if desc_elem else "N/A"
+        description = descricao_completa[:200]
 
         # ======= CORREÇÃO 2: EXTRAÇÃO SEMÂNTICA =======
         quartos = "N/A"
@@ -207,6 +213,7 @@ def extract_property_data(article_html: str) -> dict:
             "url": url,
             "preco": price,
             "descricao": description,
+            "descricao_completa": descricao_completa,
             "quartos": quartos,
             "suites": suites,
             "banheiros": banheiros,

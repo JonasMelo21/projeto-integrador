@@ -10,13 +10,13 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 
-from ml_pipeline.data import TARGET_COLUMN, load_gold_fact, split_time_based
+from ml_pipeline.data import TARGET_COLUMN, load_gold_splits
 
 # Caminhos
 PROJECT_ROOT = Path(__file__).parent.parent
 def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Carrega a fato Gold e retorna treino e teste temporais."""
-    train_df, _, test_df = split_time_based(load_gold_fact())
+    train_df, _, test_df = load_gold_splits()
     return train_df, test_df
 
 def evaluate_predictions(y_true: pd.Series, y_pred: np.ndarray, model_name: str) -> None:

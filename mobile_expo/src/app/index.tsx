@@ -66,7 +66,7 @@ export default function LoginScreen() {
                 setErrorMessage('Falha ao registrar sessão.');
               } else {
                 console.log('>>> [USUÁRIO LOGADO COM SUCESSO!]:', sessionData);
-                router.replace('/explore');
+                router.replace('/(tabs)/home');
               }
             } else {
               setErrorMessage('Token não encontrado na URL.');

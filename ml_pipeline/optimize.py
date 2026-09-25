@@ -18,7 +18,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import classification_report
 
-from ml_pipeline.data import FEATURE_COLUMNS, TARGET_COLUMN, load_gold_fact, split_time_based
+from ml_pipeline.data import FEATURE_COLUMNS, TARGET_COLUMN, load_gold_splits
 
 # Caminhos
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -26,8 +26,9 @@ MODELS_DIR = PROJECT_ROOT / "ml_pipeline" / "models"
 
 def load_train_data() -> tuple[pd.DataFrame, pd.Series]:
     """Para tuning com validação cruzada (CV), juntamos Treino e Validação."""
-    train_df, valid_df, _ = split_time_based(load_gold_fact())
+    train_df, valid_df, _ = load_gold_splits()
     full_train = pd.concat([train_df, valid_df], ignore_index=True)
+    full_train = full_train.loc[~full_train["flag_suspeito"].fillna(False)].copy()
 
     X = full_train[FEATURE_COLUMNS]
     y = full_train[TARGET_COLUMN]
@@ -35,7 +36,7 @@ def load_train_data() -> tuple[pd.DataFrame, pd.Series]:
     return X, y
 
 def get_tuning_pipeline() -> Pipeline:
-    cat_features = ["bairro_area_cross"]
+    cat_features = ["bairro_area_cross", "tipo_imovel"]
     num_features = [column for column in FEATURE_COLUMNS if column not in cat_features]
     
     preprocessor = ColumnTransformer(transformers=[
