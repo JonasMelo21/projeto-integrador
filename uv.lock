@@ -2872,6 +2872,9 @@ notebooks = [
     { name = "numpy" },
     { name = "pandas" },
     { name = "plotly" },
+    { name = "pyarrow" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "seaborn" },
 ]
 
@@ -2926,6 +2929,8 @@ notebooks = [
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "plotly", specifier = ">=5.0.0" },
+    { name = "pyarrow", specifier = ">=14.0.0" },
+    { name = "scipy", specifier = ">=1.13.0" },
     { name = "seaborn", specifier = ">=0.12.0" },
 ]
 
