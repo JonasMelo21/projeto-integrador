@@ -88,3 +88,13 @@ def split_time_based(
         raise ValueError("A tabela fato precisa de registros suficientes para os três splits.")
 
     return train_df, valid_df, test_df
+
+
+def get_zero_rule_baseline(y_train: pd.Series, y_test: pd.Series) -> float:
+    """Calcula a acurácia do baseline Zero Rule (classe majoritária)."""
+    import numpy as np
+    from sklearn.metrics import accuracy_score
+
+    majority_class = y_train.mode()[0]
+    y_pred = np.full(shape=y_test.shape, fill_value=majority_class)
+    return accuracy_score(y_test, y_pred)

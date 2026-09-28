@@ -10,7 +10,7 @@ import pandas as pd
 import joblib
 from sklearn.metrics import accuracy_score, f1_score, classification_report, confusion_matrix
 
-from ml_pipeline.data import FEATURE_COLUMNS, TARGET_COLUMN, load_gold_splits
+from ml_pipeline.data import FEATURE_COLUMNS, TARGET_COLUMN, load_gold_splits, get_zero_rule_baseline
 
 # Caminhos
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -42,10 +42,15 @@ def main():
     acc = accuracy_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred, average="macro")
 
+    # Calcular baseline Zero Rule para contexto
+    train_df, _, _ = load_gold_splits()
+    y_train = train_df[TARGET_COLUMN]
+    baseline_acc = get_zero_rule_baseline(y_train, y_test)
+
     print("\n" + "-"*40)
     print(" 🏆 MÉTRICAS FINAIS DE PRODUÇÃO ")
     print("-" * 40)
-    print(f"Acurácia Global: {acc:.4f} (Baseline Original: 0.5000)")
+    print(f"Acurácia Global: {acc:.4f} (Baseline Zero Rule: {baseline_acc:.4f})")
     print(f"F1-Score (Macro): {f1:.4f}")
     print("\nRelatório de Classificação Detalhado:")
     print(classification_report(y_test, y_pred, zero_division=0))

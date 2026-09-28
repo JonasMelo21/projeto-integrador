@@ -15,7 +15,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 
-from ml_pipeline.data import FEATURE_COLUMNS, TARGET_COLUMN, load_gold_splits
+from ml_pipeline.data import FEATURE_COLUMNS, TARGET_COLUMN, load_gold_splits, get_zero_rule_baseline
 
 PROJECT_ROOT = Path(__file__).parent.parent
 MODELS_DIR = PROJECT_ROOT / "ml_pipeline" / "models"
@@ -80,12 +80,15 @@ def main():
 
     # 3. Avaliar no conjunto de Validação
     y_pred_valid = model_pipeline.predict(X_valid)
-    
+
     acc = accuracy_score(y_valid, y_pred_valid)
     f1 = f1_score(y_valid, y_pred_valid, average="macro")
 
+    # Calcular baseline Zero Rule para contexto
+    baseline_acc = get_zero_rule_baseline(y_train, y_valid)
+
     print(f"\n--- Resultados na Validação ---")
-    print(f"Acurácia: {acc:.4f} (Baseline a bater: 0.5000)")
+    print(f"Acurácia: {acc:.4f} (Baseline Zero Rule: {baseline_acc:.4f})")
     print(f"F1-Score (Macro): {f1:.4f}")
     print("\nRelatório de Classificação:")
     print(classification_report(y_valid, y_pred_valid, zero_division=0))
