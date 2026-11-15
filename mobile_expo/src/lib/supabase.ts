@@ -4,15 +4,20 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables.');
-}
+export const supabase =
+  supabaseUrl && supabaseAnonKey
+    ? createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          storage: AsyncStorage,
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: false,
+        },
+      })
+    : null;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
+if (!supabase) {
+  console.warn(
+    'Supabase is unavailable: set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY for this build.'
+  );
+}

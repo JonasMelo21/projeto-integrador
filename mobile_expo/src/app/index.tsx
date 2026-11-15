@@ -15,8 +15,14 @@ export default function LoginScreen() {
 
   async function handleGoogleSignIn() {
     console.log('>>> [LOG] Botão de Login clicado!');
-    setIsSigningIn(true);
     setErrorMessage(null);
+
+    if (!supabase) {
+      setErrorMessage('Login indisponível: as variáveis do Supabase não foram configuradas neste build.');
+      return;
+    }
+
+    setIsSigningIn(true);
 
     try {
       const redirectUrl = Linking.createURL('/');
@@ -66,7 +72,7 @@ export default function LoginScreen() {
                 setErrorMessage('Falha ao registrar sessão.');
               } else {
                 console.log('>>> [USUÁRIO LOGADO COM SUCESSO!]:', sessionData);
-                router.replace('/explore');
+                router.replace('/(tabs)/home');
               }
             } else {
               setErrorMessage('Token não encontrado na URL.');

@@ -11,44 +11,44 @@ export default function ExploreScreen() {
           <Text style={styles.eyebrow}>O MONEYBALL DO ALUGUEL</Text>
           <Text style={styles.title}>RentMaster</Text>
           <Text style={styles.description}>
-            Utilizamos Inteligência Artificial para combater a assimetria de informações no mercado imobiliário do DF. Descubra se um aluguel é justo, caro ou uma verdadeira barganha.
+            O RentMaster foi criado para combater a assimetria de informações no mercado imobiliário. Nossa missão não é vender imóveis, mas sim usar inteligência de dados para dizer se o preço anunciado é justo, caro demais ou barato demais pelo que o imóvel realmente oferece.
           </Text>
         </View>
 
-        {/* Cards de Tecnologia */}
+        {/* Benefícios */}
         <View style={styles.cardsWrapper}>
           <View style={styles.card}>
             <View style={styles.iconContainer}>
-              <MaterialCommunityIcons name="database-search" size={28} color="#60a5fa" />
+              <MaterialCommunityIcons name="eye-outline" size={28} color="#60a5fa" />
             </View>
             <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>Pipeline de Dados</Text>
+              <Text style={styles.cardTitle}>Transparência Real</Text>
               <Text style={styles.cardText}>
-                Arquitetura Medallion processando e refinando milhares de imóveis em tempo real.
+                Saiba instantaneamente se o valor cobrado por um imóvel está alinhado com as características que ele possui e a região onde se encontra.
               </Text>
             </View>
           </View>
 
           <View style={styles.card}>
             <View style={styles.iconContainer}>
-              <MaterialCommunityIcons name="brain" size={28} color="#60a5fa" />
+              <MaterialCommunityIcons name="clock-outline" size={28} color="#60a5fa" />
             </View>
             <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>Machine Learning</Text>
+              <Text style={styles.cardTitle}>Economia de Tempo</Text>
               <Text style={styles.cardText}>
-                Modelos preditivos Random Forest que identificam anomalias e garantem uma precificação justa.
+                Pare de fazer cálculos complexos ou cruzar abas de navegador. Nossa inteligência audita milhares de imóveis para você.
               </Text>
             </View>
           </View>
 
           <View style={styles.card}>
             <View style={styles.iconContainer}>
-              <MaterialCommunityIcons name="robot-outline" size={28} color="#60a5fa" />
+              <MaterialCommunityIcons name="shield-check-outline" size={28} color="#60a5fa" />
             </View>
             <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>Assistente Vanna AI</Text>
+              <Text style={styles.cardTitle}>Decisão Segura</Text>
               <Text style={styles.cardText}>
-                Inteligência conversacional integrada para analisar o mercado através de linguagem natural.
+                Tenha os dados necessários na palma da mão para negociar melhor e nunca pagar mais do que um imóvel realmente vale.
               </Text>
             </View>
           </View>

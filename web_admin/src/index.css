@@ -1,0 +1,58 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    background: #020617;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    background: #020617;
+  }
+
+  button,
+  select {
+    cursor: pointer;
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: #2563eb;
+    color: #eff6ff;
+  }
+}
+
+@layer utilities {
+  .scrollbar-dark {
+    scrollbar-color: #334155 transparent;
+    scrollbar-width: thin;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: #334155;
+  background-clip: padding-box;
+}

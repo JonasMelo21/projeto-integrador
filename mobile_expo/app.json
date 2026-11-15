@@ -2,19 +2,20 @@
   "expo": {
     "name": "RentMaster",
     "slug": "rentmaster",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icone_rentmaster.jpg",
     "scheme": "mobileexpo",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/icone_rentmaster.jpg"
     },
     "android": {
       "package": "br.com.rentmaster.app",
+      "versionCode": 7,
       "adaptiveIcon": {
         "backgroundColor": "#121418",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "foregroundImage": "./assets/images/icone_rentmaster.jpg",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
@@ -41,10 +42,15 @@
       "reactCompiler": true
     },
     "extra": {
-      "router": {},
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
       "eas": {
-        "projectId": "4b4687fb-a98d-430f-bd06-693593bce3d5"
+        "projectId": "1472bf69-d2e8-4e9e-a2dc-448247016a80"
       }
-    }
+    },
+    "owner": "honoratojonas904"
   }
 }
